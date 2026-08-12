@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
+import AdminUsers from './AdminUsers'
 
 function App() {
   const [scores, setScores] = useState([])
@@ -68,7 +69,7 @@ function App() {
       <h1>SPARTITION</h1>
       <p>Benvenuto nell'area di gestione spartiti e media di REMEDIOSX.</p>
 
-{session ? (
+      {session ? (
         <div>
           <p>
             Sei loggato come: {session.user.email}
@@ -79,7 +80,7 @@ function App() {
           {profile && profile.role === 'admin' && (
             <div style={{ border: '2px solid red', padding: '10px', marginTop: '10px' }}>
               <h3>Area Amministrazione</h3>
-              <p>Questa sezione sarà visibile solo a te come admin.</p>
+              <AdminUsers />
             </div>
           )}
         </div>
