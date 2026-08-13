@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import AdminUsers from './AdminUsers'
+import UploadPart from './UploadPart'
 
 function App() {
   const [scores, setScores] = useState([])
@@ -87,6 +88,12 @@ function App() {
       ) : (
         <Auth />
       )}
+
+          {profile && (profile.role === 'uploader' || profile.role === 'admin') && (
+            <div style={{ border: '2px solid green', padding: '10px', marginTop: '10px' }}>
+              <UploadPart userId={session.user.id} />
+            </div>
+          )}
 
       <h2>Brani nel catalogo</h2>
       {loading && <p>Caricamento in corso...</p>}
