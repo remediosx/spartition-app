@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
+async function calculateFileHash(file) {
+  const buffer = await file.arrayBuffer()
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 function UploadPart({ userId }) {
   const [scores, setScores] = useState([])
   const [bands, setBands] = useState([])
@@ -36,9 +43,31 @@ function UploadPart({ userId }) {
 
     setUploading(true)
 
+    // Calcola l'impronta digitale del file
+    const fileHash = await calculateFileHash(file)
+
+    // Controlla se esiste già un file identico
+    const { data: existingParts, error: hashCheckError } = await supabase
+      .from('score_parts')
+      .select('id, original_filename')
+      .eq('file_hash', fileHash)
+
+    if (hashCheckError) {
+      setMessage('Errore nel controllo duplicati: ' + hashCheckError.message)
+      setUploading(false)
+      return
+    }
+
+    if (existingParts && existingParts.length > 0) {
+      setMessage(
+        `Questo file esiste già in archivio (caricato come "${existingParts[0].original_filename}"). Upload annullato per evitare duplicati.`
+      )
+      setUploading(false)
+      return
+    }
+
     let scoreId = selectedScore
 
-    // 0) Se è un brano nuovo, crealo prima di tutto
     if (isNewScore) {
       const { data: newScore, error: scoreError } = await supabase
         .from('scores')
@@ -54,11 +83,9 @@ function UploadPart({ userId }) {
       scoreId = newScore.id
     }
 
-    // 1) Genera un nome file unico e sicuro
     const fileExt = file.name.split('.').pop()
     const safeFileName = `${crypto.randomUUID()}.${fileExt}`
 
-    // 2) Carica il file fisico nello Storage
     const { error: uploadError } = await supabase.storage
       .from('score-parts')
       .upload(safeFileName, file)
@@ -69,7 +96,6 @@ function UploadPart({ userId }) {
       return
     }
 
-    // 3) Crea la riga corrispondente in score_parts
     const { data: newPart, error: insertError } = await supabase
       .from('score_parts')
       .insert({
@@ -78,6 +104,7 @@ function UploadPart({ userId }) {
         file_path: safeFileName,
         original_filename: file.name,
         uploaded_by: userId,
+        file_hash: fileHash,
       })
       .select()
       .single()
@@ -88,7 +115,6 @@ function UploadPart({ userId }) {
       return
     }
 
-    // 4) Collega la parte alla band scelta
     const { error: linkError } = await supabase
       .from('score_parts_bands')
       .insert({
