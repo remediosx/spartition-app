@@ -5,6 +5,7 @@ function UploadPart({ userId }) {
   const [scores, setScores] = useState([])
   const [bands, setBands] = useState([])
   const [selectedScore, setSelectedScore] = useState('')
+  const [newScoreTitle, setNewScoreTitle] = useState('')
   const [selectedBand, setSelectedBand] = useState('')
   const [partType, setPartType] = useState('full_package')
   const [file, setFile] = useState(null)
@@ -12,27 +13,48 @@ function UploadPart({ userId }) {
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
-    async function fetchOptions() {
-      const { data: scoresData } = await supabase.from('scores').select('id, title')
-      const { data: bandsData } = await supabase.from('bands').select('id, name')
-      setScores(scoresData || [])
-      setBands(bandsData || [])
-    }
     fetchOptions()
   }, [])
+
+  async function fetchOptions() {
+    const { data: scoresData } = await supabase.from('scores').select('id, title')
+    const { data: bandsData } = await supabase.from('bands').select('id, name')
+    setScores(scoresData || [])
+    setBands(bandsData || [])
+  }
 
   async function handleUpload(e) {
     e.preventDefault()
     setMessage('')
 
-    if (!file || !selectedScore || !selectedBand) {
+    const isNewScore = selectedScore === '__new__'
+
+    if ((!selectedScore || (isNewScore && !newScoreTitle.trim())) || !selectedBand || !file) {
       setMessage('Compila tutti i campi e scegli un file.')
       return
     }
 
     setUploading(true)
 
-    // 1) Genera un nome file unico e sicuro (senza spazi/caratteri strani)
+    let scoreId = selectedScore
+
+    // 0) Se è un brano nuovo, crealo prima di tutto
+    if (isNewScore) {
+      const { data: newScore, error: scoreError } = await supabase
+        .from('scores')
+        .insert({ title: newScoreTitle.trim() })
+        .select()
+        .single()
+
+      if (scoreError) {
+        setMessage('Errore nella creazione del brano: ' + scoreError.message)
+        setUploading(false)
+        return
+      }
+      scoreId = newScore.id
+    }
+
+    // 1) Genera un nome file unico e sicuro
     const fileExt = file.name.split('.').pop()
     const safeFileName = `${crypto.randomUUID()}.${fileExt}`
 
@@ -51,7 +73,7 @@ function UploadPart({ userId }) {
     const { data: newPart, error: insertError } = await supabase
       .from('score_parts')
       .insert({
-        score_id: selectedScore,
+        score_id: scoreId,
         part_type: partType,
         file_path: safeFileName,
         original_filename: file.name,
@@ -79,6 +101,9 @@ function UploadPart({ userId }) {
     } else {
       setMessage('File caricato con successo!')
       setFile(null)
+      setNewScoreTitle('')
+      setSelectedScore('')
+      fetchOptions()
     }
 
     setUploading(false)
@@ -92,11 +117,25 @@ function UploadPart({ userId }) {
           <label>Brano: </label>
           <select value={selectedScore} onChange={(e) => setSelectedScore(e.target.value)}>
             <option value="">-- scegli --</option>
+            <option value="__new__">➕ Nuovo brano...</option>
             {scores.map((s) => (
               <option key={s.id} value={s.id}>{s.title}</option>
             ))}
           </select>
         </div>
+
+        {selectedScore === '__new__' && (
+          <div>
+            <label>Titolo nuovo brano: </label>
+            <input
+              type="text"
+              value={newScoreTitle}
+              onChange={(e) => setNewScoreTitle(e.target.value)}
+              placeholder="Es. Take Five"
+            />
+          </div>
+        )}
+
         <div>
           <label>Band: </label>
           <select value={selectedBand} onChange={(e) => setSelectedBand(e.target.value)}>
