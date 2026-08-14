@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import AdminUsers from './AdminUsers'
 import UploadPart from './UploadPart'
+import ScoreParts from './ScoreParts'
 
 function App() {
   const [scores, setScores] = useState([])
@@ -101,7 +102,10 @@ function App() {
       {!loading && scores.length > 0 && (
         <ul>
           {scores.map((score) => (
-            <li key={score.id}>{score.title}</li>
+            <li key={score.id}>
+              {score.title}
+              <ScoreParts scoreId={score.id} />
+            </li>
           ))}
         </ul>
       )}
