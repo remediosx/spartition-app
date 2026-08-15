@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import UploadPart from '../UploadPart'
-import ScoreParts from '../ScoreParts'
+import { Link } from 'react-router-dom'
 
 function ScoresPage({ profile, userId }) {
   const [scores, setScores] = useState([])
@@ -63,13 +63,14 @@ function ScoresPage({ profile, userId }) {
 
             return (
               <li key={score.id}>
-                <strong>{score.title}</strong>
+                <strong>
+                  <Link to={`/scores/${score.id}`}>{score.title}</Link>
+                </strong>
                 {details.length > 0 && (
                   <div style={{ fontSize: '0.9em', color: '#555' }}>
                     {details.join(' — ')}
                   </div>
                 )}
-                <ScoreParts scoreId={score.id} />
               </li>
             )
           })}

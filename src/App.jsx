@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import ScoresPage from './pages/ScoresPage'
 import MediaPage from './pages/MediaPage'
 import AdminPage from './pages/AdminPage'
+import ScoreDetailPage from './pages/ScoreDetailPage'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -86,6 +87,7 @@ function App() {
             path="/media"
             element={<MediaPage profile={profile} userId={session?.user?.id} />}
           />
+          <Route path="/scores/:id" element={<ScoreDetailPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </div>
