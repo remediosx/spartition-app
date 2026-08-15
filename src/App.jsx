@@ -51,7 +51,15 @@ function App() {
     async function fetchScores() {
       const { data, error } = await supabase
         .from('scores')
-        .select('*')
+        .select(`
+          id,
+          title,
+          composer:composer_id ( first_name, last_name ),
+          lyricist:lyricist_id ( first_name, last_name ),
+          arranger:arranger_id ( first_name, last_name ),
+          transcriber:transcriber_id ( first_name, last_name ),
+          recorded_by:recorded_by_id ( name )
+        `)
 
       if (error) {
         console.error('Errore nel caricamento:', error)
@@ -109,12 +117,26 @@ function App() {
       {!loading && scores.length === 0 && <p>Nessun brano trovato.</p>}
       {!loading && scores.length > 0 && (
         <ul>
-          {scores.map((score) => (
-            <li key={score.id}>
-              {score.title}
-              <ScoreParts scoreId={score.id} />
-            </li>
-          ))}
+          {scores.map((score) => {
+            const details = []
+            if (score.composer) details.push(`Musica: ${score.composer.first_name} ${score.composer.last_name}`)
+            if (score.lyricist) details.push(`Testo: ${score.lyricist.first_name} ${score.lyricist.last_name}`)
+            if (score.arranger) details.push(`Arr: ${score.arranger.first_name} ${score.arranger.last_name}`)
+            if (score.transcriber) details.push(`Trascr: ${score.transcriber.first_name} ${score.transcriber.last_name}`)
+            if (score.recorded_by) details.push(`Come registrata da: ${score.recorded_by.name}`)
+
+            return (
+              <li key={score.id}>
+                <strong>{score.title}</strong>
+                {details.length > 0 && (
+                  <div style={{ fontSize: '0.9em', color: '#555' }}>
+                    {details.join(' — ')}
+                  </div>
+                )}
+                <ScoreParts scoreId={score.id} />
+              </li>
+            )
+          })}
         </ul>
       )}
 

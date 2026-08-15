@@ -63,6 +63,8 @@ function UploadPart({ userId }) {
   const [newScoreTitle, setNewScoreTitle] = useState('')
   const [selectedBand, setSelectedBand] = useState('')
   const [partType, setPartType] = useState('full_package')
+  const [instruments, setInstruments] = useState([])
+  const [instrumentId, setInstrumentId] = useState('')
   const [file, setFile] = useState(null)
   const [message, setMessage] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -83,14 +85,25 @@ function UploadPart({ userId }) {
   }, [])
 
   async function fetchOptions() {
-    const { data: scoresData } = await supabase.from('scores').select('id, title')
+    const { data: scoresData } = await supabase
+      .from('scores')
+      .select(`
+        id,
+        title,
+        composer:composer_id ( first_name, last_name ),
+        arranger:arranger_id ( first_name, last_name ),
+        transcriber:transcriber_id ( first_name, last_name ),
+        recorded_by:recorded_by_id ( name )
+      `)
     const { data: bandsData } = await supabase.from('bands').select('id, name')
     const { data: contributorsData } = await supabase.from('contributors').select('id, first_name, last_name')
     const { data: performersData } = await supabase.from('performers').select('id, name')
+    const { data: instrumentsData } = await supabase.from('instruments').select('id, name')
     setScores(scoresData || [])
     setBands(bandsData || [])
     setContributors(contributorsData || [])
     setPerformers(performersData || [])
+    setInstruments(instrumentsData || [])
   }
 
   async function resolveContributorId(selectedId, newName) {
@@ -128,6 +141,7 @@ function UploadPart({ userId }) {
     setFile(null)
     setNewScoreTitle('')
     setSelectedScore('')
+    setInstrumentId('')
     setComposerId('')
     setComposerNewName('')
     setLyricistId('')
@@ -231,6 +245,7 @@ function UploadPart({ userId }) {
       .insert({
         score_id: scoreId,
         part_type: partType,
+        instrument_id: partType === 'instrument_part' ? (instrumentId || null) : null,
         file_path: safeFileName,
         original_filename: file.name,
         uploaded_by: userId,
@@ -272,9 +287,17 @@ function UploadPart({ userId }) {
           <select value={selectedScore} onChange={(e) => setSelectedScore(e.target.value)}>
             <option value="">-- scegli --</option>
             <option value="__new__">➕ Nuovo brano...</option>
-            {scores.map((s) => (
-              <option key={s.id} value={s.id}>{s.title}</option>
-            ))}
+            {scores.map((s) => {
+              const details = []
+              if (s.composer) details.push(`${s.composer.first_name} ${s.composer.last_name}`)
+              if (s.arranger) details.push(`arr. ${s.arranger.first_name} ${s.arranger.last_name}`)
+              if (s.transcriber) details.push(`trascr. ${s.transcriber.first_name} ${s.transcriber.last_name}`)
+              if (s.recorded_by) details.push(`as recorded by ${s.recorded_by.name}`)
+              const label = details.length > 0 ? `${s.title} (${details.join(', ')})` : s.title
+              return (
+                <option key={s.id} value={s.id}>{label}</option>
+              )
+            })}
           </select>
         </div>
 
@@ -352,6 +375,18 @@ function UploadPart({ userId }) {
             <option value="other">Altro</option>
           </select>
         </div>
+
+        {partType === 'instrument_part' && (
+          <div>
+            <label>Strumento: </label>
+            <select value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)}>
+              <option value="">-- scegli --</option>
+              {instruments.map((i) => (
+                <option key={i.id} value={i.id}>{i.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label>File PDF: </label>
           <input
