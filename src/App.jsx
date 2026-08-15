@@ -47,28 +47,29 @@ function App() {
     fetchProfile()
   }, [session])
 
-  useEffect(() => {
-    async function fetchScores() {
-      const { data, error } = await supabase
-        .from('scores')
-        .select(`
-          id,
-          title,
-          composer:composer_id ( first_name, last_name ),
-          lyricist:lyricist_id ( first_name, last_name ),
-          arranger:arranger_id ( first_name, last_name ),
-          transcriber:transcriber_id ( first_name, last_name ),
-          recorded_by:recorded_by_id ( name )
-        `)
+  async function fetchScores() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('scores')
+      .select(`
+        id,
+        title,
+        composer:composer_id ( first_name, last_name ),
+        lyricist:lyricist_id ( first_name, last_name ),
+        arranger:arranger_id ( first_name, last_name ),
+        transcriber:transcriber_id ( first_name, last_name ),
+        recorded_by:recorded_by_id ( name )
+      `)
 
-      if (error) {
-        console.error('Errore nel caricamento:', error)
-      } else {
-        setScores(data)
-      }
-      setLoading(false)
+    if (error) {
+      console.error('Errore nel caricamento:', error)
+    } else {
+      setScores(data)
     }
+    setLoading(false)
+  }
 
+  useEffect(() => {
     fetchScores()
   }, [])
 
@@ -112,7 +113,10 @@ function App() {
             </div>
           )}
 
-      <h2>Brani nel catalogo</h2>
+      <h2>
+        Brani nel catalogo{' '}
+        <button onClick={fetchScores}>🔄 Aggiorna</button>
+      </h2>
       {loading && <p>Caricamento in corso...</p>}
       {!loading && scores.length === 0 && <p>Nessun brano trovato.</p>}
       {!loading && scores.length > 0 && (

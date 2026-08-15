@@ -28,12 +28,30 @@ function UploadMedia({ userId }) {
   }, [])
 
   async function fetchOptions() {
-    const { data: scoresData } = await supabase.from('scores').select('id, title')
+    const { data: scoresData } = await supabase
+      .from('scores')
+      .select(`
+        id,
+        title,
+        composer:composer_id ( first_name, last_name ),
+        arranger:arranger_id ( first_name, last_name ),
+        transcriber:transcriber_id ( first_name, last_name ),
+        recorded_by:recorded_by_id ( name )
+      `)
     const { data: bandsData } = await supabase.from('bands').select('id, name')
     const { data: performersData } = await supabase.from('performers').select('id, name')
     setScores(scoresData || [])
     setBands(bandsData || [])
     setPerformers(performersData || [])
+  }
+
+  function scoreLabel(s) {
+    const details = []
+    if (s.composer) details.push(`${s.composer.first_name} ${s.composer.last_name}`)
+    if (s.arranger) details.push(`arr. ${s.arranger.first_name} ${s.arranger.last_name}`)
+    if (s.transcriber) details.push(`trascr. ${s.transcriber.first_name} ${s.transcriber.last_name}`)
+    if (s.recorded_by) details.push(`as recorded by ${s.recorded_by.name}`)
+    return details.length > 0 ? `${s.title} (${details.join(', ')})` : s.title
   }
 
   async function handleUpload(e) {
@@ -140,7 +158,7 @@ function UploadMedia({ userId }) {
           <select value={selectedScore} onChange={(e) => setSelectedScore(e.target.value)}>
             <option value="">-- nessuno --</option>
             {scores.map((s) => (
-              <option key={s.id} value={s.id}>{s.title}</option>
+              <option key={s.id} value={s.id}>{scoreLabel(s)}</option>
             ))}
           </select>
         </div>

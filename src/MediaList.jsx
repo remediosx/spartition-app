@@ -53,11 +53,13 @@ function MediaList() {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) return <p>Caricamento media...</p>
-  if (mediaItems.length === 0) return <p>Nessun media caricato.</p>
-
   return (
-    <ul>
+    <div>
+      <button onClick={fetchMedia}>🔄 Aggiorna</button>
+      {loading && <p>Caricamento media...</p>}
+      {!loading && mediaItems.length === 0 && <p>Nessun media caricato.</p>}
+      {!loading && mediaItems.length > 0 && (
+      <ul>
       {mediaItems.map((m) => (
         <li key={m.id}>
           [{m.media_type}] {m.original_filename}
@@ -72,6 +74,8 @@ function MediaList() {
         </li>
       ))}
     </ul>
+      )}
+    </div>
   )
 }
 
