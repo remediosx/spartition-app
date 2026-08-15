@@ -4,6 +4,7 @@ import Auth from './Auth'
 import AdminUsers from './AdminUsers'
 import UploadPart from './UploadPart'
 import ScoreParts from './ScoreParts'
+import UploadMedia from './UploadMedia'
 
 function App() {
   const [scores, setScores] = useState([])
@@ -93,6 +94,12 @@ function App() {
           {profile && (profile.role === 'uploader' || profile.role === 'admin') && (
             <div style={{ border: '2px solid green', padding: '10px', marginTop: '10px' }}>
               <UploadPart userId={session.user.id} />
+            </div>
+          )}
+
+          {profile && (profile.role === 'uploader' || profile.role === 'admin') && (
+            <div style={{ border: '2px solid blue', padding: '10px', marginTop: '10px' }}>
+              <UploadMedia userId={session.user.id} />
             </div>
           )}
 
