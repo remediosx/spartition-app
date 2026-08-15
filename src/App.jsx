@@ -5,6 +5,7 @@ import AdminUsers from './AdminUsers'
 import UploadPart from './UploadPart'
 import ScoreParts from './ScoreParts'
 import UploadMedia from './UploadMedia'
+import MediaList from './MediaList'
 
 function App() {
   const [scores, setScores] = useState([])
@@ -116,6 +117,10 @@ function App() {
           ))}
         </ul>
       )}
+
+      <h2>Media (audio/video/immagini)</h2>
+      <MediaList />
+
     </div>
   )
 }
