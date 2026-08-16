@@ -8,6 +8,7 @@ import MediaPage from './pages/MediaPage'
 import AdminPage from './pages/AdminPage'
 import ScoreDetailPage from './pages/ScoreDetailPage'
 import RequireAdmin from './RequireAdmin'
+import MyBandsPage from './pages/MyBandsPage'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -60,6 +61,9 @@ function App() {
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
           <Link to="/scores" style={{ marginRight: '15px' }}>Spartiti</Link>
           <Link to="/media" style={{ marginRight: '15px' }}>Media</Link>
+          {profile && (profile.role === 'uploader' || profile.role === 'admin') && (
+            <Link to="/my-bands" style={{ marginRight: '15px' }}>Le mie Band</Link>
+          )}
           {profile && profile.role === 'admin' && (
             <Link to="/admin" style={{ marginRight: '15px' }}>Amministrazione</Link>
           )}
@@ -89,6 +93,7 @@ function App() {
             element={<MediaPage profile={profile} userId={session?.user?.id} />}
           />
           <Route path="/scores/:id" element={<ScoreDetailPage />} />
+          <Route path="/my-bands" element={<MyBandsPage userId={session?.user?.id} />} />
           <Route path="/admin" element={<AdminPage />} /><Route
             path="/admin"
             element={
