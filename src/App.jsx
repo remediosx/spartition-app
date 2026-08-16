@@ -61,7 +61,7 @@ function App() {
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
           <Link to="/scores" style={{ marginRight: '15px' }}>Spartiti</Link>
           <Link to="/media" style={{ marginRight: '15px' }}>Media</Link>
-          {profile && (profile.role === 'uploader' || profile.role === 'admin') && (
+          {session && (
             <Link to="/my-bands" style={{ marginRight: '15px' }}>Le mie Band</Link>
           )}
           {profile && profile.role === 'admin' && (
