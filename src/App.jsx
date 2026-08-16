@@ -7,6 +7,7 @@ import ScoresPage from './pages/ScoresPage'
 import MediaPage from './pages/MediaPage'
 import AdminPage from './pages/AdminPage'
 import ScoreDetailPage from './pages/ScoreDetailPage'
+import RequireAdmin from './RequireAdmin'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -88,7 +89,14 @@ function App() {
             element={<MediaPage profile={profile} userId={session?.user?.id} />}
           />
           <Route path="/scores/:id" element={<ScoreDetailPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin" element={<AdminPage />} /><Route
+            path="/admin"
+            element={
+              <RequireAdmin profile={profile}>
+                <AdminPage />
+              </RequireAdmin>
+            }
+          />
         </Routes>
       </div>
     </BrowserRouter>
