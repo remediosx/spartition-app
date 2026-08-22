@@ -13,7 +13,7 @@ function ScoreParts({ scoreId }) {
     setLoading(true)
     const { data, error } = await supabase
       .from('score_parts')
-      .select('id, part_type, original_filename, file_path')
+      .select('id, part_type, original_filename, file_path, instrument:instrument_id ( name )')
       .eq('score_id', scoreId)
 
     if (error) {
@@ -35,7 +35,6 @@ function ScoreParts({ scoreId }) {
       return
     }
 
-    // Crea un link temporaneo per far partire il download nel browser
     const url = URL.createObjectURL(data)
     const a = document.createElement('a')
     a.href = url
@@ -51,7 +50,7 @@ function ScoreParts({ scoreId }) {
     <ul>
       {parts.map((p) => (
         <li key={p.id}>
-          [{p.part_type}] {p.original_filename}{' '}
+          [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
           <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
             Scarica
           </button>

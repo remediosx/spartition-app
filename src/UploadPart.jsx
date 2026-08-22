@@ -110,7 +110,7 @@ function UploadPart({ userId }) {
     fetchOptions()
   }, [])
 
-  async function fetchOptions() {
+      async function fetchOptions() {
     const { data: scoresData } = await supabase
       .from('scores')
       .select(`
@@ -123,7 +123,15 @@ function UploadPart({ userId }) {
         recorded_by:recorded_by_id ( name ),
         variant:variant_id ( name )
       `)
-    const { data: bandsData } = await supabase.from('bands').select('id, name')
+
+    const { data: bandPerms } = await supabase
+      .from('user_band_permissions')
+      .select('bands ( id, name )')
+      .eq('user_id', userId)
+      .eq('can_upload', true)
+
+    const bandsData = (bandPerms || []).map((p) => p.bands)
+
     const { data: contributorsData } = await supabase.from('contributors').select('id, first_name, last_name')
     const { data: performersData } = await supabase.from('performers').select('id, name')
     const { data: variantsData } = await supabase.from('variants').select('id, name')
@@ -303,17 +311,19 @@ function UploadPart({ userId }) {
       return
     }
 
+        const partToInsert = {
+      score_id: scoreId,
+      part_type: partType,
+      instrument_id: partType === 'instrument_part' ? (instrumentId || null) : null,
+      file_path: safeFileName,
+      original_filename: file.name,
+      uploaded_by: userId,
+      file_hash: fileHash,
+    }
+
     const { data: newPart, error: insertError } = await supabase
       .from('score_parts')
-      .insert({
-        score_id: scoreId,
-        part_type: partType,
-        instrument_id: partType === 'instrument_part' ? (instrumentId || null) : null,
-        file_path: safeFileName,
-        original_filename: file.name,
-        uploaded_by: userId,
-        file_hash: fileHash,
-      })
+      .insert(partToInsert)
       .select()
       .single()
 

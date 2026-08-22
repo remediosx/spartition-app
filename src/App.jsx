@@ -61,7 +61,7 @@ function App() {
                 <nav style={{ marginBottom: '20px' }}>
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
           <Link to="/catalog" style={{ marginRight: '15px' }}>Catalogo</Link>
-          <Link to="/scores" style={{ marginRight: '15px' }}>Spartiti</Link>
+          <Link to="/scores" style={{ marginRight: '15px' }}>Le mie Parti</Link>
           <Link to="/media" style={{ marginRight: '15px' }}>Media</Link>
           {session && (
             <Link to="/my-bands" style={{ marginRight: '15px' }}>Le mie Band</Link>
