@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
-function ScoreParts({ scoreId }) {
+function ScoreParts({ scoreId, userId }) {
   const [parts, setParts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -43,6 +43,44 @@ function ScoreParts({ scoreId }) {
     URL.revokeObjectURL(url)
   }
 
+    async function handleDelete(part) {
+    const confirmed = window.confirm(
+      `Sei sicuro di voler eliminare "${part.original_filename}"? Questa azione non si può annullare.`
+    )
+    if (!confirmed) return
+
+    const { error: linkError } = await supabase
+      .from('score_parts_bands')
+      .delete()
+      .eq('score_part_id', part.id)
+
+    if (linkError) {
+      alert('Errore nella rimozione dei collegamenti: ' + linkError.message)
+      return
+    }
+
+    const { error: storageError } = await supabase.storage
+      .from('score-parts')
+      .remove([part.file_path])
+
+    if (storageError) {
+      alert('Errore nella rimozione del file: ' + storageError.message)
+      return
+    }
+
+    const { error: dbError } = await supabase
+      .from('score_parts')
+      .delete()
+      .eq('id', part.id)
+
+    if (dbError) {
+      alert('Errore nella rimozione della parte: ' + dbError.message)
+      return
+    }
+
+    fetchParts()
+  }
+
   if (loading) return <p>Caricamento parti...</p>
   if (parts.length === 0) return <p>Nessuna parte disponibile per questo brano.</p>
 
@@ -53,7 +91,8 @@ function ScoreParts({ scoreId }) {
           [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
           <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
             Scarica
-          </button>
+          </button>{' '}
+          <button onClick={() => handleDelete(p)}>🗑️ Elimina</button>
         </li>
       ))}
     </ul>
