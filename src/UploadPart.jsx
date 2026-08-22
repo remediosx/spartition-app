@@ -54,16 +54,40 @@ function PerformerPicker({ label, value, onChange, performers, newName, onNewNam
   )
 }
 
+function VariantPicker({ label, value, onChange, variants, newName, onNewNameChange }) {
+  return (
+    <div>
+      <label>{label}: </label>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">-- nessuna --</option>
+        <option value="__new__">➕ Nuova...</option>
+        {variants.map((v) => (
+          <option key={v.id} value={v.id}>{v.name}</option>
+        ))}
+      </select>
+      {value === '__new__' && (
+        <input
+          type="text"
+          placeholder="Es. Note del Maestro Rossi"
+          value={newName}
+          onChange={(e) => onNewNameChange(e.target.value)}
+        />
+      )}
+    </div>
+  )
+}
+
 function UploadPart({ userId }) {
   const [scores, setScores] = useState([])
   const [bands, setBands] = useState([])
   const [contributors, setContributors] = useState([])
   const [performers, setPerformers] = useState([])
+  const [variants, setVariants] = useState([])
+  const [instruments, setInstruments] = useState([])
   const [selectedScore, setSelectedScore] = useState('')
   const [newScoreTitle, setNewScoreTitle] = useState('')
   const [selectedBand, setSelectedBand] = useState('')
   const [partType, setPartType] = useState('full_package')
-  const [instruments, setInstruments] = useState([])
   const [instrumentId, setInstrumentId] = useState('')
   const [file, setFile] = useState(null)
   const [message, setMessage] = useState('')
@@ -79,6 +103,8 @@ function UploadPart({ userId }) {
   const [transcriberNewName, setTranscriberNewName] = useState('')
   const [recordedById, setRecordedById] = useState('')
   const [recordedByNewName, setRecordedByNewName] = useState('')
+  const [variantId, setVariantId] = useState('')
+  const [variantNewName, setVariantNewName] = useState('')
 
   useEffect(() => {
     fetchOptions()
@@ -91,19 +117,34 @@ function UploadPart({ userId }) {
         id,
         title,
         composer:composer_id ( first_name, last_name ),
+        lyricist:lyricist_id ( first_name, last_name ),
         arranger:arranger_id ( first_name, last_name ),
         transcriber:transcriber_id ( first_name, last_name ),
-        recorded_by:recorded_by_id ( name )
+        recorded_by:recorded_by_id ( name ),
+        variant:variant_id ( name )
       `)
     const { data: bandsData } = await supabase.from('bands').select('id, name')
     const { data: contributorsData } = await supabase.from('contributors').select('id, first_name, last_name')
     const { data: performersData } = await supabase.from('performers').select('id, name')
+    const { data: variantsData } = await supabase.from('variants').select('id, name')
     const { data: instrumentsData } = await supabase.from('instruments').select('id, name')
     setScores(scoresData || [])
     setBands(bandsData || [])
     setContributors(contributorsData || [])
     setPerformers(performersData || [])
+    setVariants(variantsData || [])
     setInstruments(instrumentsData || [])
+  }
+
+  function scoreLabel(s) {
+    const details = []
+    if (s.composer) details.push(`${s.composer.first_name} ${s.composer.last_name}`)
+    if (s.lyricist) details.push(`testo ${s.lyricist.first_name} ${s.lyricist.last_name}`)
+    if (s.arranger) details.push(`arr. ${s.arranger.first_name} ${s.arranger.last_name}`)
+    if (s.transcriber) details.push(`trascr. ${s.transcriber.first_name} ${s.transcriber.last_name}`)
+    if (s.recorded_by) details.push(`as recorded by ${s.recorded_by.name}`)
+    if (s.variant) details.push(`[${s.variant.name}]`)
+    return details.length > 0 ? `${s.title} (${details.join(', ')})` : s.title
   }
 
   async function resolveContributorId(selectedId, newName) {
@@ -137,6 +178,20 @@ function UploadPart({ userId }) {
     return { id: selectedId || null, error: null }
   }
 
+  async function resolveVariantId(selectedId, newName) {
+    if (selectedId === '__new__') {
+      if (!newName.trim()) return { id: null, error: null }
+      const { data, error } = await supabase
+        .from('variants')
+        .insert({ name: newName.trim() })
+        .select()
+        .single()
+      if (error) return { id: null, error }
+      return { id: data.id, error: null }
+    }
+    return { id: selectedId || null, error: null }
+  }
+
   function resetForm() {
     setFile(null)
     setNewScoreTitle('')
@@ -152,6 +207,8 @@ function UploadPart({ userId }) {
     setTranscriberNewName('')
     setRecordedById('')
     setRecordedByNewName('')
+    setVariantId('')
+    setVariantNewName('')
   }
 
   async function handleUpload(e) {
@@ -169,10 +226,14 @@ function UploadPart({ userId }) {
 
     const fileHash = await calculateFileHash(file)
 
-    const { data: existingParts, error: hashCheckError } = await supabase
-      .from('score_parts')
-      .select('id, original_filename')
-      .eq('file_hash', fileHash)
+    const { data: existingLinks, error: hashCheckError } = await supabase
+      .from('score_parts_bands')
+      .select(`
+        band_id,
+        score_parts!inner ( original_filename, file_hash )
+      `)
+      .eq('score_parts.file_hash', fileHash)
+      .eq('band_id', selectedBand)
 
     if (hashCheckError) {
       setMessage('Errore nel controllo duplicati: ' + hashCheckError.message)
@@ -180,9 +241,9 @@ function UploadPart({ userId }) {
       return
     }
 
-    if (existingParts && existingParts.length > 0) {
+    if (existingLinks && existingLinks.length > 0) {
       setMessage(
-        `Questo file esiste già in archivio (caricato come "${existingParts[0].original_filename}"). Upload annullato.`
+        `Questo file esiste già per questa band (caricato come "${existingLinks[0].score_parts.original_filename}"). Upload annullato.`
       )
       setUploading(false)
       return
@@ -196,12 +257,13 @@ function UploadPart({ userId }) {
       const arrangerResult = await resolveContributorId(arrangerId, arrangerNewName)
       const transcriberResult = await resolveContributorId(transcriberId, transcriberNewName)
       const recordedByResult = await resolvePerformerId(recordedById, recordedByNewName)
+      const variantResult = await resolveVariantId(variantId, variantNewName)
 
       if (
         composerResult.error || lyricistResult.error || arrangerResult.error ||
-        transcriberResult.error || recordedByResult.error
+        transcriberResult.error || recordedByResult.error || variantResult.error
       ) {
-        setMessage('Errore nella creazione degli autori/interpreti.')
+        setMessage('Errore nella creazione degli autori/interpreti/varianti.')
         setUploading(false)
         return
       }
@@ -215,6 +277,7 @@ function UploadPart({ userId }) {
           arranger_id: arrangerResult.id,
           transcriber_id: transcriberResult.id,
           recorded_by_id: recordedByResult.id,
+          variant_id: variantResult.id,
         })
         .select()
         .single()
@@ -287,17 +350,9 @@ function UploadPart({ userId }) {
           <select value={selectedScore} onChange={(e) => setSelectedScore(e.target.value)}>
             <option value="">-- scegli --</option>
             <option value="__new__">➕ Nuovo brano...</option>
-            {scores.map((s) => {
-              const details = []
-              if (s.composer) details.push(`${s.composer.first_name} ${s.composer.last_name}`)
-              if (s.arranger) details.push(`arr. ${s.arranger.first_name} ${s.arranger.last_name}`)
-              if (s.transcriber) details.push(`trascr. ${s.transcriber.first_name} ${s.transcriber.last_name}`)
-              if (s.recorded_by) details.push(`as recorded by ${s.recorded_by.name}`)
-              const label = details.length > 0 ? `${s.title} (${details.join(', ')})` : s.title
-              return (
-                <option key={s.id} value={s.id}>{label}</option>
-              )
-            })}
+            {scores.map((s) => (
+              <option key={s.id} value={s.id}>{scoreLabel(s)}</option>
+            ))}
           </select>
         </div>
 
@@ -353,6 +408,14 @@ function UploadPart({ userId }) {
               newName={recordedByNewName}
               onNewNameChange={setRecordedByNewName}
             />
+            <VariantPicker
+              label="Variante/Nota distintiva (opzionale)"
+              value={variantId}
+              onChange={setVariantId}
+              variants={variants}
+              newName={variantNewName}
+              onNewNameChange={setVariantNewName}
+            />
           </>
         )}
 
@@ -387,6 +450,7 @@ function UploadPart({ userId }) {
             </select>
           </div>
         )}
+
         <div>
           <label>File PDF: </label>
           <input

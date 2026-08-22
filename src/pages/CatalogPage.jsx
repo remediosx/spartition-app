@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
-import UploadPart from '../UploadPart'
 import { Link } from 'react-router-dom'
+import { supabase } from '../supabaseClient'
 
-function ScoresPage({ profile, userId }) {
+function CatalogPage() {
   const [scores, setScores] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -34,22 +33,14 @@ function ScoresPage({ profile, userId }) {
     fetchScores()
   }, [])
 
-  const canUpload = profile && (profile.role === 'uploader' || profile.role === 'admin')
-
   return (
     <div>
-      <h2>Spartiti</h2>
-
-      {canUpload && (
-        <div style={{ border: '2px solid green', padding: '10px', marginBottom: '20px' }}>
-          <UploadPart userId={userId} />
-        </div>
-      )}
-
-      <h3>
-        Brani nel catalogo{' '}
+      <h2>
+        Catalogo completo{' '}
         <button onClick={fetchScores}>🔄 Aggiorna</button>
-      </h3>
+      </h2>
+      <p>Tutti i brani di tutte le band presenti su SPARTITION.</p>
+
       {loading && <p>Caricamento in corso...</p>}
       {!loading && scores.length === 0 && <p>Nessun brano trovato.</p>}
       {!loading && scores.length > 0 && (
@@ -61,7 +52,7 @@ function ScoresPage({ profile, userId }) {
             if (score.arranger) details.push(`Arr: ${score.arranger.first_name} ${score.arranger.last_name}`)
             if (score.transcriber) details.push(`Trascr: ${score.transcriber.first_name} ${score.transcriber.last_name}`)
             if (score.recorded_by) details.push(`Come registrata da: ${score.recorded_by.name}`)
-            if (score.variant) details.push(`Variante: ${score.variant.name}`)
+            if (score.variant) details.push(`[${score.variant.name}]`)
 
             return (
               <li key={score.id}>
@@ -82,4 +73,4 @@ function ScoresPage({ profile, userId }) {
   )
 }
 
-export default ScoresPage
+export default CatalogPage

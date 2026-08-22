@@ -36,7 +36,8 @@ function UploadMedia({ userId }) {
         composer:composer_id ( first_name, last_name ),
         arranger:arranger_id ( first_name, last_name ),
         transcriber:transcriber_id ( first_name, last_name ),
-        recorded_by:recorded_by_id ( name )
+        recorded_by:recorded_by_id ( name ),
+        variant:variant_id ( name )
       `)
     const { data: bandsData } = await supabase.from('bands').select('id, name')
     const { data: performersData } = await supabase.from('performers').select('id, name')
@@ -51,6 +52,7 @@ function UploadMedia({ userId }) {
     if (s.arranger) details.push(`arr. ${s.arranger.first_name} ${s.arranger.last_name}`)
     if (s.transcriber) details.push(`trascr. ${s.transcriber.first_name} ${s.transcriber.last_name}`)
     if (s.recorded_by) details.push(`as recorded by ${s.recorded_by.name}`)
+    if (s.variant) details.push(`[${s.variant.name}]`)
     return details.length > 0 ? `${s.title} (${details.join(', ')})` : s.title
   }
 

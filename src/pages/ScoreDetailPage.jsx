@@ -24,7 +24,8 @@ function ScoreDetailPage() {
         lyricist:lyricist_id ( first_name, last_name ),
         arranger:arranger_id ( first_name, last_name ),
         transcriber:transcriber_id ( first_name, last_name ),
-        recorded_by:recorded_by_id ( name )
+        recorded_by:recorded_by_id ( name ),
+        variant:variant_id ( name )
       `)
       .eq('id', id)
       .single()
@@ -52,6 +53,7 @@ function ScoreDetailPage() {
         {score.arranger && <li>Arrangiamento: {score.arranger.first_name} {score.arranger.last_name}</li>}
         {score.transcriber && <li>Trascrizione: {score.transcriber.first_name} {score.transcriber.last_name}</li>}
         {score.recorded_by && <li>Come registrata da: {score.recorded_by.name}</li>}
+        {score.variant && <li>Variante: {score.variant.name}</li>}
       </ul>
 
       {score.notes && <p><em>Note: {score.notes}</em></p>}

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import Home from './pages/Home'
+import CatalogPage from './pages/CatalogPage'
 import ScoresPage from './pages/ScoresPage'
 import MediaPage from './pages/MediaPage'
 import AdminPage from './pages/AdminPage'
@@ -57,8 +58,9 @@ function App() {
       <div>
         <h1>SPARTITION</h1>
 
-        <nav style={{ marginBottom: '20px' }}>
+                <nav style={{ marginBottom: '20px' }}>
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
+          <Link to="/catalog" style={{ marginRight: '15px' }}>Catalogo</Link>
           <Link to="/scores" style={{ marginRight: '15px' }}>Spartiti</Link>
           <Link to="/media" style={{ marginRight: '15px' }}>Media</Link>
           {session && (
@@ -84,6 +86,7 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/catalog" element={<CatalogPage />} />
           <Route
             path="/scores"
             element={<ScoresPage profile={profile} userId={session?.user?.id} />}
