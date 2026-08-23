@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import ScoreParts from '../ScoreParts'
 
 function ScoreDetailPage() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const from = searchParams.get('from')
+  const backLink = from === 'catalog' ? '/catalog' : '/scores'
+  const backLabel = from === 'catalog' ? '← Torna al Catalogo' : "← Torna a Le mie Parti"
   const [score, setScore] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -44,7 +48,7 @@ function ScoreDetailPage() {
 
   return (
     <div>
-      <Link to="/scores">← Torna all'elenco</Link>
+      <Link to={backLink}>{backLabel}</Link>
       <h2>{score.title}</h2>
 
       <ul>

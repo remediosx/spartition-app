@@ -57,7 +57,7 @@ function CatalogPage() {
             return (
               <li key={score.id}>
                 <strong>
-                  <Link to={`/scores/${score.id}`}>{score.title}</Link>
+                  <Link to={`/scores/${score.id}?from=catalog`}>{score.title}</Link>
                 </strong>
                 {details.length > 0 && (
                   <div style={{ fontSize: '0.9em', color: '#555' }}>

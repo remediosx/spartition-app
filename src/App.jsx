@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import CatalogPage from './pages/CatalogPage'
 import ScoresPage from './pages/ScoresPage'
 import MediaPage from './pages/MediaPage'
+import MediaCatalogPage from './pages/MediaCatalogPage'
 import AdminPage from './pages/AdminPage'
 import ScoreDetailPage from './pages/ScoreDetailPage'
 import RequireAdmin from './RequireAdmin'
@@ -58,11 +59,12 @@ function App() {
       <div>
         <h1>SPARTITION</h1>
 
-                <nav style={{ marginBottom: '20px' }}>
+        <nav style={{ marginBottom: '20px' }}>
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
           <Link to="/catalog" style={{ marginRight: '15px' }}>Catalogo</Link>
           <Link to="/scores" style={{ marginRight: '15px' }}>Le mie Parti</Link>
           <Link to="/media" style={{ marginRight: '15px' }}>Media</Link>
+          <Link to="/media-catalog" style={{ marginRight: '15px' }}>Catalogo Media</Link>
           {session && (
             <Link to="/my-bands" style={{ marginRight: '15px' }}>Le mie Band</Link>
           )}
@@ -91,13 +93,14 @@ function App() {
             path="/scores"
             element={<ScoresPage profile={profile} userId={session?.user?.id} />}
           />
+          <Route path="/scores/:id" element={<ScoreDetailPage />} />
           <Route
             path="/media"
             element={<MediaPage profile={profile} userId={session?.user?.id} />}
           />
-          <Route path="/scores/:id" element={<ScoreDetailPage />} />
+          <Route path="/media-catalog" element={<MediaCatalogPage />} />
           <Route path="/my-bands" element={<MyBandsPage userId={session?.user?.id} />} />
-          <Route path="/admin" element={<AdminPage />} /><Route
+          <Route
             path="/admin"
             element={
               <RequireAdmin profile={profile}>
