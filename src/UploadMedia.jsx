@@ -39,7 +39,15 @@ function UploadMedia({ userId }) {
         recorded_by:recorded_by_id ( name ),
         variant:variant_id ( name )
       `)
-    const { data: bandsData } = await supabase.from('bands').select('id, name')
+
+    const { data: bandPerms } = await supabase
+      .from('user_band_permissions')
+      .select('bands ( id, name )')
+      .eq('user_id', userId)
+      .eq('can_upload', true)
+
+    const bandsData = (bandPerms || []).map((p) => p.bands)
+
     const { data: performersData } = await supabase.from('performers').select('id, name')
     setScores(scoresData || [])
     setBands(bandsData || [])

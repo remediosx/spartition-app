@@ -53,6 +53,34 @@ function MediaList() {
     URL.revokeObjectURL(url)
   }
 
+    async function handleDelete(item) {
+    const confirmed = window.confirm(
+      `Sei sicuro di voler eliminare "${item.original_filename}"? Questa azione non si può annullare.`
+    )
+    if (!confirmed) return
+
+    const { error: storageError } = await supabase.storage
+      .from('media-items')
+      .remove([item.file_path])
+
+    if (storageError) {
+      alert('Errore nella rimozione del file: ' + storageError.message)
+      return
+    }
+
+    const { error: dbError } = await supabase
+      .from('media_items')
+      .delete()
+      .eq('id', item.id)
+
+    if (dbError) {
+      alert('Errore nella rimozione: ' + dbError.message)
+      return
+    }
+
+    fetchMedia()
+  }
+
   return (
     <div>
       <button onClick={fetchMedia}>🔄 Aggiorna</button>
@@ -70,7 +98,8 @@ function MediaList() {
           {m.notes && ` — Note: ${m.notes}`}{' '}
           <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
             Scarica
-          </button>
+          </button>{' '}
+          <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
         </li>
       ))}
     </ul>

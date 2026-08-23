@@ -63,7 +63,7 @@ function App() {
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
           <Link to="/catalog" style={{ marginRight: '15px' }}>Catalogo</Link>
           <Link to="/scores" style={{ marginRight: '15px' }}>Le mie Parti</Link>
-          <Link to="/media" style={{ marginRight: '15px' }}>Media</Link>
+          <Link to="/media" style={{ marginRight: '15px' }}>I miei Media</Link>
           <Link to="/media-catalog" style={{ marginRight: '15px' }}>Catalogo Media</Link>
           {session && (
             <Link to="/my-bands" style={{ marginRight: '15px' }}>Le mie Band</Link>
