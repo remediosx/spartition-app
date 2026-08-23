@@ -13,7 +13,7 @@ function ScoreParts({ scoreId, userId }) {
     setLoading(true)
     const { data, error } = await supabase
       .from('score_parts')
-      .select('id, part_type, original_filename, file_path, instrument:instrument_id ( name )')
+      .select('id, part_type, original_filename, file_path, preview_path, instrument:instrument_id ( name )')
       .eq('score_id', scoreId)
 
     if (error) {
@@ -23,6 +23,14 @@ function ScoreParts({ scoreId, userId }) {
       setParts(data)
     }
     setLoading(false)
+  }
+
+    function getPreviewUrl(previewPath) {
+    if (!previewPath) return null
+    const { data } = supabase.storage
+      .from('score-previews')
+      .getPublicUrl(previewPath)
+    return data.publicUrl
   }
 
   async function handleDownload(filePath, originalFilename) {
@@ -87,7 +95,16 @@ function ScoreParts({ scoreId, userId }) {
   return (
     <ul>
       {parts.map((p) => (
-        <li key={p.id}>
+        <li key={p.id} style={{ marginBottom: '15px' }}>
+          {p.preview_path && (
+            <div>
+              <img
+                src={getPreviewUrl(p.preview_path)}
+                alt={`Anteprima ${p.original_filename}`}
+                style={{ maxWidth: '30%', border: '1px solid #ccc' }}
+              />
+            </div>
+          )}
           [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
           <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
             Scarica

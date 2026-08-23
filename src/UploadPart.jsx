@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import { generatePreview } from './generatePreview'
 
 async function calculateFileHash(file) {
   const buffer = await file.arrayBuffer()
@@ -311,6 +312,22 @@ function UploadPart({ userId }) {
       return
     }
 
+    // Generiamo e carichiamo l'anteprima (non blocca l'upload se fallisce)
+    let previewPath = null
+    try {
+      const previewBlob = await generatePreview(file)
+      const previewFileName = `${safeFileName}-preview.png`
+      const { error: previewError } = await supabase.storage
+        .from('score-previews')
+        .upload(previewFileName, previewBlob)
+
+      if (!previewError) {
+        previewPath = previewFileName
+      }
+    } catch (previewErr) {
+      console.error('Errore nella generazione anteprima:', previewErr)
+    }
+
         const partToInsert = {
       score_id: scoreId,
       part_type: partType,
@@ -319,6 +336,7 @@ function UploadPart({ userId }) {
       original_filename: file.name,
       uploaded_by: userId,
       file_hash: fileHash,
+      preview_path: previewPath,
     }
 
     const { data: newPart, error: insertError } = await supabase

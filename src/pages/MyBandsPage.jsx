@@ -46,17 +46,29 @@ function MyBandsPage({ userId }) {
     setMessage('')
     if (!newBandName.trim()) return
 
-    const { error } = await supabase
+    const { data: newBand, error } = await supabase
       .from('bands')
       .insert({ name: newBandName.trim(), owner_id: userId })
+      .select()
+      .single()
 
     if (error) {
       setMessage('Errore: ' + error.message)
-    } else {
-      setMessage('Band creata!')
-      setNewBandName('')
-      fetchAll()
+      return
     }
+
+    const { error: permError } = await supabase
+      .from('user_band_permissions')
+      .insert({ user_id: userId, band_id: newBand.id, can_upload: true })
+
+    if (permError) {
+      setMessage('Band creata, ma errore nell\'assegnare il permesso di upload: ' + permError.message)
+    } else {
+      setMessage('Band creata e permesso di upload assegnato!')
+    }
+
+    setNewBandName('')
+    fetchAll()
   }
 
   async function handleGrant(e) {
