@@ -226,8 +226,16 @@ function UploadPart({ userId }) {
 
     const isNewScore = selectedScore === '__new__'
 
-    if ((!selectedScore || (isNewScore && !newScoreTitle.trim())) || !selectedBand || !file) {
+        if ((!selectedScore || (isNewScore && !newScoreTitle.trim())) || !selectedBand || !file) {
       setMessage('Compila tutti i campi e scegli un file.')
+      return
+    }
+
+    const maxSizeBytes = 50 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      setMessage(
+        `Il file è troppo grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Il limite massimo è 50 MB. Prova a comprimere il PDF.`
+      )
       return
     }
 

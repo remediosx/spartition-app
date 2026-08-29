@@ -75,6 +75,14 @@ function UploadMedia({ userId }) {
       return
     }
 
+    const maxSizeBytes = 50 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      setMessage(
+        `Il file è troppo grande (${(file.size / 1024 / 1024).toFixed(1)} MB). Il limite massimo è 50 MB.`
+      )
+      return
+    }
+
     setUploading(true)
 
     const fileHash = await calculateFileHash(file)
