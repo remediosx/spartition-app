@@ -1,36 +1,44 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 
 function MyMediaList({ userId }) {
+  const [myBands, setMyBands] = useState([])
   const [mediaItems, setMediaItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loadingBands, setLoadingBands] = useState(true)
+  const [loadingMedia, setLoadingMedia] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedBandId = searchParams.get('band')
 
   useEffect(() => {
-    fetchMyMedia()
+    fetchMyBands()
   }, [userId])
 
-  async function fetchMyMedia() {
+  useEffect(() => {
+    if (selectedBandId) {
+      fetchMediaForBand(selectedBandId)
+    }
+  }, [selectedBandId])
+
+  async function fetchMyBands() {
     if (!userId) {
-      setMediaItems([])
-      setLoading(false)
+      setMyBands([])
+      setLoadingBands(false)
       return
     }
-
-    setLoading(true)
-
+    setLoadingBands(true)
     const { data: perms } = await supabase
       .from('user_band_permissions')
-      .select('band_id')
+      .select('band_id, bands ( id, name )')
       .eq('user_id', userId)
 
-    const bandIds = (perms || []).map((p) => p.band_id)
+    const bands = (perms || []).map((p) => p.bands).filter(Boolean)
+    setMyBands(bands)
+    setLoadingBands(false)
+  }
 
-    if (bandIds.length === 0) {
-      setMediaItems([])
-      setLoading(false)
-      return
-    }
-
+  async function fetchMediaForBand(bandId) {
+    setLoadingMedia(true)
     const { data, error } = await supabase
       .from('media_items')
       .select(`
@@ -41,10 +49,9 @@ function MyMediaList({ userId }) {
         original_filename,
         file_path,
         performers ( name ),
-        scores ( title ),
-        bands ( name )
+        scores ( title )
       `)
-      .in('band_id', bandIds)
+      .eq('band_id', bandId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -53,7 +60,33 @@ function MyMediaList({ userId }) {
     } else {
       setMediaItems(data)
     }
-    setLoading(false)
+    setLoadingMedia(false)
+  }
+
+  function selectBand(bandId) {
+    setSearchParams({ band: bandId })
+  }
+
+  function backToBands() {
+    setSearchParams({})
+  }
+
+  async function handleDownload(filePath, originalFilename) {
+    const { data, error } = await supabase.storage
+      .from('media-items')
+      .download(filePath)
+
+    if (error) {
+      alert('Errore nel download: ' + error.message)
+      return
+    }
+
+    const url = URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = originalFilename
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   async function handleDelete(item) {
@@ -81,49 +114,59 @@ function MyMediaList({ userId }) {
       return
     }
 
-    fetchMyMedia()
+    fetchMediaForBand(selectedBandId)
   }
 
-  async function handleDownload(filePath, originalFilename) {
-    const { data, error } = await supabase.storage
-      .from('media-items')
-      .download(filePath)
+  const currentBand = myBands.find((b) => b.id === Number(selectedBandId))
 
-    if (error) {
-      alert('Errore nel download: ' + error.message)
-      return
-    }
+  if (loadingBands) return <p>Caricamento...</p>
 
-    const url = URL.createObjectURL(data)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = originalFilename
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-    return (
+  return (
     <div>
-      <button onClick={fetchMyMedia}>🔄 Aggiorna</button>
-      {loading && <p>Caricamento media...</p>}
-      {!loading && mediaItems.length === 0 && <p>Non hai ancora media disponibili per le tue band.</p>}
-      {!loading && mediaItems.length > 0 && (
-      <ul>
-      {mediaItems.map((m) => (
-        <li key={m.id}>
-          [{m.media_type}] {m.original_filename}
-          {m.scores && ` — Brano: ${m.scores.title}`}
-          {m.performers && ` — Performer: ${m.performers.name}`}
-          {m.recording_year && ` — Anno: ${m.recording_year}`}
-          {m.bands && ` — Band: ${m.bands.name}`}
-          {m.notes && ` — Note: ${m.notes}`}{' '}
-        <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
-            Scarica
-          </button>{' '}
-          <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
-        </li>
-      ))}
-        </ul>
+      {!selectedBandId && (
+        <>
+          <p>Scegli una band per vedere i suoi media:</p>
+          {myBands.length === 0 && (
+            <p>Non fai ancora parte di nessuna band. Vai su <Link to="/my-bands">Le mie Band</Link> per crearne una.</p>
+          )}
+          <ul>
+            {myBands.map((b) => (
+              <li key={b.id}>
+                <button onClick={() => selectBand(b.id)}>{b.name}</button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {selectedBandId && (
+        <>
+          <button onClick={backToBands}>← Torna alle band</button>
+          <h3>
+            {currentBand ? currentBand.name : 'Band'}{' '}
+            <button onClick={() => fetchMediaForBand(selectedBandId)}>🔄 Aggiorna</button>
+          </h3>
+
+          {loadingMedia && <p>Caricamento media...</p>}
+          {!loadingMedia && mediaItems.length === 0 && <p>Nessun media disponibile per questa band.</p>}
+          {!loadingMedia && mediaItems.length > 0 && (
+            <ul>
+              {mediaItems.map((m) => (
+                <li key={m.id}>
+                  [{m.media_type}] {m.original_filename}
+                  {m.scores && ` — Brano: ${m.scores.title}`}
+                  {m.performers && ` — Performer: ${m.performers.name}`}
+                  {m.recording_year && ` — Anno: ${m.recording_year}`}
+                  {m.notes && ` — Note: ${m.notes}`}{' '}
+                  <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
+                    Scarica
+                  </button>{' '}
+                  <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   )
