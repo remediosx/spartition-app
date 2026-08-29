@@ -307,7 +307,30 @@ function UploadPart({ userId }) {
       scoreId = newScore.id
     }
 
+        // Costruiamo un nome descrittivo leggibile
+    const scoreTitle = isNewScore
+      ? newScoreTitle.trim()
+      : scores.find((s) => s.id === Number(selectedScore))?.title || 'Brano'
+
+    const partTypeLabels = {
+      full_package: 'Pacchetto completo',
+      conductor_score: 'Partitura direttore',
+      instrument_part: 'Parte strumento',
+      lead_sheet: 'Lead sheet',
+      other: 'Altro',
+    }
+
+    const nameParts = [scoreTitle]
+    if (partType === 'instrument_part' && instrumentId) {
+      const instrumentName = instruments.find((i) => i.id === Number(instrumentId))?.name
+      if (instrumentName) nameParts.push(instrumentName)
+    } else {
+      nameParts.push(partTypeLabels[partType] || partType)
+    }
+
     const fileExt = file.name.split('.').pop()
+    const descriptiveFileName = nameParts.join(' - ').replace(/[/\\:*?"<>|]/g, '') + '.' + fileExt
+
     const safeFileName = `${crypto.randomUUID()}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
@@ -341,7 +364,7 @@ function UploadPart({ userId }) {
       part_type: partType,
       instrument_id: partType === 'instrument_part' ? (instrumentId || null) : null,
       file_path: safeFileName,
-      original_filename: file.name,
+      original_filename: descriptiveFileName,
       uploaded_by: userId,
       file_hash: fileHash,
       preview_path: previewPath,
