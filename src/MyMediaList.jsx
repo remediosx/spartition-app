@@ -5,6 +5,7 @@ import { supabase } from './supabaseClient'
 function MyMediaList({ userId }) {
   const [myBands, setMyBands] = useState([])
   const [mediaItems, setMediaItems] = useState([])
+  const [mediaUrls, setMediaUrls] = useState({})
   const [loadingBands, setLoadingBands] = useState(true)
   const [loadingMedia, setLoadingMedia] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -37,6 +38,15 @@ function MyMediaList({ userId }) {
     setLoadingBands(false)
   }
 
+  async function getMediaUrl(filePath) {
+    const { data, error } = await supabase.storage
+      .from('media-items')
+      .createSignedUrl(filePath, 3600)
+
+    if (error) return null
+    return data.signedUrl
+  }
+
   async function fetchMediaForBand(bandId) {
     setLoadingMedia(true)
     const { data, error } = await supabase
@@ -59,6 +69,15 @@ function MyMediaList({ userId }) {
       setMediaItems([])
     } else {
       setMediaItems(data)
+
+      const urls = {}
+      for (const item of data) {
+        if (item.media_type === 'image' || item.media_type === 'audio') {
+          const url = await getMediaUrl(item.file_path)
+          if (url) urls[item.id] = url
+        }
+      }
+      setMediaUrls(urls)
     }
     setLoadingMedia(false)
   }
@@ -152,7 +171,17 @@ function MyMediaList({ userId }) {
           {!loadingMedia && mediaItems.length > 0 && (
             <ul>
               {mediaItems.map((m) => (
-                <li key={m.id}>
+                <li key={m.id} style={{ marginBottom: '10px' }}>
+                  {m.media_type === 'image' && mediaUrls[m.id] && (
+                    <div>
+                      <img src={mediaUrls[m.id]} alt={m.original_filename} style={{ maxWidth: '40px' }} />
+                    </div>
+                  )}
+                  {m.media_type === 'audio' && mediaUrls[m.id] && (
+                    <div>
+                      <audio controls src={mediaUrls[m.id]} style={{ maxWidth: '300px' }} />
+                    </div>
+                  )}
                   [{m.media_type}] {m.original_filename}
                   {m.scores && ` — Brano: ${m.scores.title}`}
                   {m.performers && ` — Performer: ${m.performers.name}`}
