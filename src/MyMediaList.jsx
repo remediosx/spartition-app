@@ -102,11 +102,13 @@ function MyMediaList({ userId }) {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) return <p>Caricamento media...</p>
-  if (mediaItems.length === 0) return <p>Non hai ancora media disponibili per le tue band.</p>
-
-  return (
-    <ul>
+    return (
+    <div>
+      <button onClick={fetchMyMedia}>🔄 Aggiorna</button>
+      {loading && <p>Caricamento media...</p>}
+      {!loading && mediaItems.length === 0 && <p>Non hai ancora media disponibili per le tue band.</p>}
+      {!loading && mediaItems.length > 0 && (
+      <ul>
       {mediaItems.map((m) => (
         <li key={m.id}>
           [{m.media_type}] {m.original_filename}
@@ -121,7 +123,9 @@ function MyMediaList({ userId }) {
           <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
         </li>
       ))}
-    </ul>
+        </ul>
+      )}
+    </div>
   )
 }
 

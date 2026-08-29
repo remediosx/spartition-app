@@ -1,50 +1,59 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import UploadPart from '../UploadPart'
 
 function ScoresPage({ profile, userId }) {
+  const [myBands, setMyBands] = useState([])
   const [scores, setScores] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loadingBands, setLoadingBands] = useState(true)
+  const [loadingScores, setLoadingScores] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedBandId = searchParams.get('band')
 
-  async function fetchMyScores() {
+  useEffect(() => {
+    fetchMyBands()
+  }, [userId])
+
+  useEffect(() => {
+    if (selectedBandId) {
+      fetchScoresForBand(selectedBandId)
+    }
+  }, [selectedBandId])
+
+  async function fetchMyBands() {
     if (!userId) {
-      setScores([])
-      setLoading(false)
+      setMyBands([])
+      setLoadingBands(false)
       return
     }
-
-    setLoading(true)
-
-    // 1) Troviamo le band a cui l'utente è associato
+    setLoadingBands(true)
     const { data: perms } = await supabase
       .from('user_band_permissions')
-      .select('band_id')
+      .select('band_id, bands ( id, name )')
       .eq('user_id', userId)
 
-    const bandIds = (perms || []).map((p) => p.band_id)
+    const bands = (perms || []).map((p) => p.bands).filter(Boolean)
+    setMyBands(bands)
+    setLoadingBands(false)
+  }
 
-    if (bandIds.length === 0) {
-      setScores([])
-      setLoading(false)
-      return
-    }
+  async function fetchScoresForBand(bandId) {
+    setLoadingScores(true)
 
-    // 2) Troviamo le parti collegate a quelle band
     const { data: links } = await supabase
       .from('score_parts_bands')
       .select('score_part_id')
-      .in('band_id', bandIds)
+      .eq('band_id', bandId)
 
     const scorePartIds = (links || []).map((l) => l.score_part_id)
 
     if (scorePartIds.length === 0) {
       setScores([])
-      setLoading(false)
+      setLoadingScores(false)
       return
     }
 
-    // 3) Troviamo i brani di quelle parti
     const { data: parts } = await supabase
       .from('score_parts')
       .select('score_id')
@@ -54,11 +63,10 @@ function ScoresPage({ profile, userId }) {
 
     if (scoreIds.length === 0) {
       setScores([])
-      setLoading(false)
+      setLoadingScores(false)
       return
     }
 
-    // 4) Carichiamo i dettagli di quei brani
     const { data, error } = await supabase
       .from('scores')
       .select(`
@@ -78,19 +86,25 @@ function ScoresPage({ profile, userId }) {
     } else {
       setScores(data)
     }
-    setLoading(false)
+    setLoadingScores(false)
   }
 
-  useEffect(() => {
-    fetchMyScores()
-  }, [userId])
+  function selectBand(bandId) {
+    setSearchParams({ band: bandId })
+  }
+
+  function backToBands() {
+    setSearchParams({})
+  }
 
   const canUpload = profile && (profile.role === 'uploader' || profile.role === 'admin')
+  const currentBand = myBands.find((b) => b.id === Number(selectedBandId))
+
+  if (loadingBands) return <p>Caricamento...</p>
 
   return (
     <div>
       <h2>Le mie Parti</h2>
-      <p>Brani delle band di cui fai parte. Per il catalogo completo, vai su <Link to="/catalog">Catalogo</Link>.</p>
 
       {canUpload && (
         <div style={{ border: '2px solid green', padding: '10px', marginBottom: '20px' }}>
@@ -98,39 +112,56 @@ function ScoresPage({ profile, userId }) {
         </div>
       )}
 
-      <h3>
-        Brani{' '}
-        <button onClick={fetchMyScores}>🔄 Aggiorna</button>
-      </h3>
-      {loading && <p>Caricamento in corso...</p>}
-      {!loading && scores.length === 0 && (
-        <p>Non hai ancora parti disponibili. Se pensi sia un errore, contatta il titolare della tua band.</p>
-      )}
-      {!loading && scores.length > 0 && (
-        <ul>
-          {scores.map((score) => {
-            const details = []
-            if (score.composer) details.push(`Musica: ${score.composer.first_name} ${score.composer.last_name}`)
-            if (score.lyricist) details.push(`Testo: ${score.lyricist.first_name} ${score.lyricist.last_name}`)
-            if (score.arranger) details.push(`Arr: ${score.arranger.first_name} ${score.arranger.last_name}`)
-            if (score.transcriber) details.push(`Trascr: ${score.transcriber.first_name} ${score.transcriber.last_name}`)
-            if (score.recorded_by) details.push(`Come registrata da: ${score.recorded_by.name}`)
-            if (score.variant) details.push(`[${score.variant.name}]`)
-
-            return (
-              <li key={score.id}>
-                <strong>
-                  <Link to={`/scores/${score.id}?from=myparts`}>{score.title}</Link>
-                </strong>
-                {details.length > 0 && (
-                  <div style={{ fontSize: '0.9em', color: '#555' }}>
-                    {details.join(' — ')}
-                  </div>
-                )}
+      {!selectedBandId && (
+        <>
+          <p>Scegli una band per vedere le sue parti:</p>
+          {myBands.length === 0 && (
+            <p>Non fai ancora parte di nessuna band. Vai su <Link to="/my-bands">Le mie Band</Link> per crearne una.</p>
+          )}
+          <ul>
+            {myBands.map((b) => (
+              <li key={b.id}>
+                <button onClick={() => selectBand(b.id)}>{b.name}</button>
               </li>
-            )
-          })}
-        </ul>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {selectedBandId && (
+        <>
+          <button onClick={backToBands}>← Torna alle band</button>
+          <h3>{currentBand ? currentBand.name : 'Band'}</h3>
+
+          {loadingScores && <p>Caricamento in corso...</p>}
+          {!loadingScores && scores.length === 0 && <p>Nessuna parte disponibile per questa band.</p>}
+          {!loadingScores && scores.length > 0 && (
+            <ul>
+              {scores.map((score) => {
+                const details = []
+                if (score.composer) details.push(`Musica: ${score.composer.first_name} ${score.composer.last_name}`)
+                if (score.lyricist) details.push(`Testo: ${score.lyricist.first_name} ${score.lyricist.last_name}`)
+                if (score.arranger) details.push(`Arr: ${score.arranger.first_name} ${score.arranger.last_name}`)
+                if (score.transcriber) details.push(`Trascr: ${score.transcriber.first_name} ${score.transcriber.last_name}`)
+                if (score.recorded_by) details.push(`Come registrata da: ${score.recorded_by.name}`)
+                if (score.variant) details.push(`Variante: ${score.variant.name}`)
+
+                return (
+                  <li key={score.id}>
+                    <strong>
+                      <Link to={`/scores/${score.id}?from=myparts`}>{score.title}</Link>
+                    </strong>
+                    {details.length > 0 && (
+                      <div style={{ fontSize: '0.9em', color: '#555' }}>
+                        {details.join(' — ')}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </>
       )}
     </div>
   )

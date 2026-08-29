@@ -126,7 +126,25 @@ function UploadMedia({ userId }) {
       performerId = newPerformer.id
     }
 
+        // Costruiamo un nome descrittivo leggibile
+    const scoreTitle = selectedScore
+      ? scores.find((s) => s.id === Number(selectedScore))?.title
+      : null
+
+    const mediaTypeLabels = {
+      audio: 'Audio',
+      video: 'Video',
+      image: 'Immagine',
+    }
+
+    const nameParts = []
+    if (scoreTitle) nameParts.push(scoreTitle)
+    nameParts.push(mediaTypeLabels[mediaType] || mediaType)
+    if (recordingYear) nameParts.push(recordingYear)
+
     const fileExt = file.name.split('.').pop()
+    const descriptiveFileName = nameParts.join(' - ').replace(/[/\\:*?"<>|]/g, '') + '.' + fileExt
+
     const safeFileName = `${crypto.randomUUID()}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
@@ -145,7 +163,7 @@ function UploadMedia({ userId }) {
       recording_year: recordingYear ? parseInt(recordingYear) : null,
       media_type: mediaType,
       file_path: safeFileName,
-      original_filename: file.name,
+      original_filename: descriptiveFileName,
       notes: notes || null,
       uploaded_by: userId,
       file_hash: fileHash,
