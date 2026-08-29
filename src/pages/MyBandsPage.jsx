@@ -32,6 +32,7 @@ function MyBandsPage({ userId }) {
         id,
         can_upload,
         band_id,
+        user_id,
         profiles ( first_name, last_name, email )
       `)
 
@@ -95,7 +96,14 @@ function MyBandsPage({ userId }) {
     }
   }
 
-  async function handleRevoke(permissionId) {
+  async function handleRevoke(permissionId, isMe) {
+    if (isMe) {
+      const confirmed = window.confirm(
+        'Stai per revocare il TUO permesso di upload su questa band, di cui sei titolare. Potrai sempre riassegnartelo in seguito. Vuoi procedere?'
+      )
+      if (!confirmed) return
+    }
+
     const { error } = await supabase
       .from('user_band_permissions')
       .delete()
@@ -165,8 +173,9 @@ function MyBandsPage({ userId }) {
                   {p.profiles.first_name} {p.profiles.last_name} ({p.profiles.email})
                   {' — '}
                   {myBands.find((b) => b.id === p.band_id)?.name}
+                  {p.user_id === userId && ' (tu)'}
                   {' '}
-                  <button onClick={() => handleRevoke(p.id)}>Revoca</button>
+                  <button onClick={() => handleRevoke(p.id, p.user_id === userId)}>Revoca</button>
                 </li>
               ))}
           </ul>
