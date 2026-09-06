@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
-function ScoreParts({ scoreId, userId }) {
+function ScoreParts({ scoreId, userId, isAdmin }) {
   const [parts, setParts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -13,7 +13,11 @@ function ScoreParts({ scoreId, userId }) {
     setLoading(true)
     const { data, error } = await supabase
       .from('score_parts')
-      .select('id, part_type, original_filename, file_path, preview_path, instrument:instrument_id ( name )')
+      .select(`
+        id, part_type, original_filename, file_path, preview_path, uploaded_by,
+        instrument:instrument_id ( name ),
+        score_parts_bands ( bands ( owner_id ) )
+      `)
       .eq('score_id', scoreId)
 
     if (error) {
@@ -109,7 +113,9 @@ function ScoreParts({ scoreId, userId }) {
           <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
             Scarica
           </button>{' '}
-          <button onClick={() => handleDelete(p)}>🗑️ Elimina</button>
+              {(isAdmin || p.uploaded_by === userId || p.score_parts_bands?.some((spb) => spb.bands?.owner_id === userId)) && (
+            <button onClick={() => handleDelete(p)}>🗑️ Elimina</button>
+          )}
         </li>
       ))}
     </ul>

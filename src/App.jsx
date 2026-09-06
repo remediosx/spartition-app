@@ -93,7 +93,10 @@ function App() {
             path="/scores"
             element={<ScoresPage profile={profile} userId={session?.user?.id} />}
           />
-          <Route path="/scores/:id" element={<ScoreDetailPage />} />
+          <Route
+            path="/scores/:id"
+            element={<ScoreDetailPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />}
+          />
           <Route
             path="/media"
             element={<MediaPage profile={profile} userId={session?.user?.id} />}

@@ -3,7 +3,7 @@ import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import ScoreParts from '../ScoreParts'
 
-function ScoreDetailPage() {
+function ScoreDetailPage({ userId, isAdmin }) {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
   const from = searchParams.get('from')
@@ -63,7 +63,7 @@ function ScoreDetailPage() {
       {score.notes && <p><em>Note: {score.notes}</em></p>}
 
       <h3>Parti disponibili</h3>
-      <ScoreParts scoreId={score.id} />
+      <ScoreParts scoreId={score.id} userId={userId} isAdmin={isAdmin} />
     </div>
   )
 }
