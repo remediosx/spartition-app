@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
-function MediaCatalogPage() {
+function MediaCatalogPage({ userId }) {
   const [bands, setBands] = useState([])
   const [mediaItems, setMediaItems] = useState([])
   const [loadingBands, setLoadingBands] = useState(true)
@@ -143,11 +143,20 @@ function MediaCatalogPage() {
                   {m.scores && ` — Brano: ${m.scores.title}`}
                   {m.performers && ` — Performer: ${m.performers.name}`}
                   {m.recording_year && ` — Anno: ${m.recording_year}`}
-                                    {m.notes && ` — Note: ${m.notes}`}{' '}
-                  <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
-                    Scarica
-                  </button>{' '}
-                  <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
+                  {m.notes && ` — Note: ${m.notes}`}{' '}
+                  {userId ? (
+                    <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
+                      Scarica
+                    </button>
+                  ) : (
+                    <span>
+                      <button disabled title="Effettua l'accesso per scaricare">Scarica</button>{' '}
+                      <Link to="/">Registrati o accedi per scaricare</Link>
+                    </span>
+                  )}{' '}
+                  {userId && (
+                    <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
+                  )}
                 </li>
               ))}
             </ul>

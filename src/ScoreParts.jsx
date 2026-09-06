@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import { Link } from 'react-router-dom'
 
 function ScoreParts({ scoreId, userId, isAdmin }) {
   const [parts, setParts] = useState([])
@@ -109,10 +110,17 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
               />
             </div>
           )}
-          [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
-          <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
-            Scarica
-          </button>{' '}
+                    [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
+          {userId ? (
+            <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
+              Scarica
+            </button>
+          ) : (
+            <span>
+              <button disabled title="Effettua l'accesso per scaricare">Scarica</button>{' '}
+              <Link to="/">Registrati o accedi per scaricare</Link>
+            </span>
+          )}{' '}
               {(isAdmin || p.uploaded_by === userId || p.score_parts_bands?.some((spb) => spb.bands?.owner_id === userId)) && (
             <button onClick={() => handleDelete(p)}>🗑️ Elimina</button>
           )}

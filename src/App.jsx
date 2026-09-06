@@ -101,7 +101,7 @@ function App() {
             path="/media"
             element={<MediaPage profile={profile} userId={session?.user?.id} />}
           />
-          <Route path="/media-catalog" element={<MediaCatalogPage />} />
+          <Route path="/media-catalog" element={<MediaCatalogPage userId={session?.user?.id} />} />
           <Route path="/my-bands" element={<MyBandsPage userId={session?.user?.id} />} />
           <Route
             path="/admin"
