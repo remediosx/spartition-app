@@ -144,16 +144,9 @@ function MediaCatalogPage({ userId }) {
                   {m.performers && ` — Performer: ${m.performers.name}`}
                   {m.recording_year && ` — Anno: ${m.recording_year}`}
                   {m.notes && ` — Note: ${m.notes}`}{' '}
-                  {userId ? (
-                    <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
-                      Scarica
-                    </button>
-                  ) : (
-                    <span>
-                      <button disabled title="Effettua l'accesso per scaricare">Scarica</button>{' '}
-                      <Link to="/">Registrati o accedi per scaricare</Link>
-                    </span>
-                  )}{' '}
+                  <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
+                    Scarica
+                  </button>{' '}
                   {userId && (
                     <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
                   )}
