@@ -18,7 +18,8 @@ function CatalogPage() {
         arranger:arranger_id ( first_name, last_name ),
         transcriber:transcriber_id ( first_name, last_name ),
         recorded_by:recorded_by_id ( name ),
-        variant:variant_id ( name )
+        variant:variant_id ( name ),
+        score_parts ( score_parts_bands ( bands ( name ) ) )
       `)
 
     if (error) {
@@ -53,6 +54,16 @@ function CatalogPage() {
             if (score.transcriber) details.push(`Trascr: ${score.transcriber.first_name} ${score.transcriber.last_name}`)
             if (score.recorded_by) details.push(`Come registrata da: ${score.recorded_by.name}`)
             if (score.variant) details.push(`[${score.variant.name}]`)
+
+            const bandNames = [
+              ...new Set(
+                (score.score_parts || [])
+                  .flatMap((sp) => sp.score_parts_bands || [])
+                  .map((spb) => spb.bands?.name)
+                  .filter(Boolean)
+              ),
+            ]
+            if (bandNames.length > 0) details.push(`Band: ${bandNames.join(', ')}`)
 
             return (
               <li key={score.id}>
