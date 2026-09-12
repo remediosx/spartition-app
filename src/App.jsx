@@ -10,6 +10,7 @@ import MediaCatalogPage from './pages/MediaCatalogPage'
 import AdminPage from './pages/AdminPage'
 import ScoreDetailPage from './pages/ScoreDetailPage'
 import RequireAdmin from './RequireAdmin'
+import DropdownMenu from './DropdownMenu'
 import MyBandsPage from './pages/MyBandsPage'
 
 function App() {
@@ -61,10 +62,23 @@ function App() {
 
         <nav style={{ marginBottom: '20px' }}>
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
-          <Link to="/catalog" style={{ marginRight: '15px' }}>Catalogo</Link>
-          <Link to="/scores" style={{ marginRight: '15px' }}>Le mie Parti</Link>
-          <Link to="/media" style={{ marginRight: '15px' }}>I miei Media</Link>
-          <Link to="/media-catalog" style={{ marginRight: '15px' }}>Catalogo Media</Link>
+
+          <DropdownMenu
+            label="Spartiti"
+            items={[
+              { to: '/scores', label: 'Le mie Parti' },
+              { to: '/catalog', label: 'Catalogo' },
+            ]}
+          />
+
+          <DropdownMenu
+            label="Media"
+            items={[
+              { to: '/media', label: 'I miei Media' },
+              { to: '/media-catalog', label: 'Catalogo Media' },
+            ]}
+          />
+
           {session && (
             <Link to="/my-bands" style={{ marginRight: '15px' }}>Le mie Band</Link>
           )}
