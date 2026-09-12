@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
-function MediaCatalogPage({ userId }) {
+function MediaCatalogPage({ userId, isAdmin }) {
   const [bands, setBands] = useState([])
   const [mediaItems, setMediaItems] = useState([])
   const [loadingBands, setLoadingBands] = useState(true)
@@ -38,8 +38,11 @@ function MediaCatalogPage({ userId }) {
         notes,
         original_filename,
         file_path,
+        uploaded_by,
+        band_id,
         performers ( name ),
-        scores ( title )
+        scores ( title ),
+        bands ( owner_id )
       `)
       .eq('band_id', bandId)
       .order('created_at', { ascending: false })
@@ -147,7 +150,7 @@ function MediaCatalogPage({ userId }) {
                   <button onClick={() => handleDownload(m.file_path, m.original_filename)}>
                     Scarica
                   </button>{' '}
-                  {userId && (
+                  {(isAdmin || m.uploaded_by === userId || m.bands?.owner_id === userId) && (
                     <button onClick={() => handleDelete(m)}>🗑️ Elimina</button>
                   )}
                 </li>
