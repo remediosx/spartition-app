@@ -43,12 +43,25 @@ function Auth() {
   }
 
   return (
-    <div>
-      <h2>{isSignUp ? 'Registrati' : 'Accedi'}</h2>
+    <div style={{ border: '1px solid #ccc', padding: '15px', maxWidth: '350px' }}>
+      <h2 style={{ marginTop: 0 }}>{isSignUp ? 'Registrati' : 'Accedi'}</h2>
+
+      <div style={{ marginBottom: '15px' }}>
+        {isSignUp ? (
+          <span>Hai già un account?{' '}
+            <button type="button" onClick={() => setIsSignUp(false)}>Accedi</button>
+          </span>
+        ) : (
+          <span>Non hai un account?{' '}
+            <button type="button" onClick={() => setIsSignUp(true)}>Registrati</button>
+          </span>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit}>
         {isSignUp && (
           <>
-            <div>
+            <div style={{ marginBottom: '10px' }}>
               <label>Nome: </label>
               <input
                 type="text"
@@ -56,7 +69,7 @@ function Auth() {
                 onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
-            <div>
+            <div style={{ marginBottom: '10px' }}>
               <label>Cognome: </label>
               <input
                 type="text"
@@ -66,7 +79,7 @@ function Auth() {
             </div>
           </>
         )}
-        <div>
+        <div style={{ marginBottom: '10px' }}>
           <label>Email: </label>
           <input
             type="email"
@@ -75,7 +88,7 @@ function Auth() {
             required
           />
         </div>
-        <div>
+        <div style={{ marginBottom: '10px' }}>
           <label>Password: </label>
           <input
             type="password"
@@ -88,10 +101,6 @@ function Auth() {
       </form>
 
       {message && <p>{message}</p>}
-
-      <button onClick={() => setIsSignUp(!isSignUp)}>
-        {isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'}
-      </button>
     </div>
   )
 }

@@ -112,7 +112,11 @@ function ScoresPage({ profile, userId }) {
         </div>
       )}
 
-      {!selectedBandId && (
+            {!userId && (
+        <p>Devi accedere o registrarti per vedere le tue parti e band. Usa il pulsante "Accedi / Registrati" in alto a destra.</p>
+      )}
+
+      {userId && !selectedBandId && (
         <>
           <p>Scegli una band per vedere le sue parti:</p>
           {myBands.length === 0 && (

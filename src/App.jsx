@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
+import Modal from './Modal'
 import Home from './pages/Home'
 import CatalogPage from './pages/CatalogPage'
 import ScoresPage from './pages/ScoresPage'
@@ -10,12 +11,13 @@ import MediaCatalogPage from './pages/MediaCatalogPage'
 import AdminPage from './pages/AdminPage'
 import ScoreDetailPage from './pages/ScoreDetailPage'
 import RequireAdmin from './RequireAdmin'
-import DropdownMenu from './DropdownMenu'
 import MyBandsPage from './pages/MyBandsPage'
+import DropdownMenu from './DropdownMenu'
 
 function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -24,6 +26,7 @@ function App() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      if (session) setAuthModalOpen(false)
     })
 
     return () => listener.subscription.unsubscribe()
@@ -58,7 +61,22 @@ function App() {
   return (
     <BrowserRouter>
       <div>
-        <h1>SPARTITION</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1>SPARTITION</h1>
+
+          <div>
+            {session ? (
+              <span>
+                {session.user.email}
+                {profile && ` (${profile.role})`}
+                {' '}
+                <button onClick={handleLogout}>Esci</button>
+              </span>
+            ) : (
+              <button onClick={() => setAuthModalOpen(true)}>Accedi / Registrati</button>
+            )}
+          </div>
+        </div>
 
         <nav style={{ marginBottom: '20px' }}>
           <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
@@ -87,17 +105,6 @@ function App() {
           )}
         </nav>
 
-        {session ? (
-          <p>
-            Sei loggato come: {session.user.email}
-            {profile && ` (${profile.first_name} ${profile.last_name} — ruolo: ${profile.role})`}
-            {' '}
-            <button onClick={handleLogout}>Esci</button>
-          </p>
-        ) : (
-          <Auth />
-        )}
-
         <hr />
 
         <Routes>
@@ -107,10 +114,7 @@ function App() {
             path="/scores"
             element={<ScoresPage profile={profile} userId={session?.user?.id} />}
           />
-          <Route
-            path="/scores/:id"
-            element={<ScoreDetailPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />}
-          />
+          <Route path="/scores/:id" element={<ScoreDetailPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />} />
           <Route
             path="/media"
             element={<MediaPage profile={profile} userId={session?.user?.id} />}
@@ -126,6 +130,10 @@ function App() {
             }
           />
         </Routes>
+
+        <Modal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)}>
+          <Auth />
+        </Modal>
       </div>
     </BrowserRouter>
   )

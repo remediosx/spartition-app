@@ -142,7 +142,11 @@ function MyMediaList({ userId }) {
 
   return (
     <div>
-      {!selectedBandId && (
+            {!userId && (
+        <p>Devi accedere o registrarti per vedere i tuoi media e band. Usa il pulsante "Accedi / Registrati" in alto a destra.</p>
+      )}
+
+      {userId && !selectedBandId && (
         <>
           <p>Scegli una band per vedere i suoi media:</p>
           {myBands.length === 0 && (
