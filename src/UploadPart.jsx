@@ -317,6 +317,9 @@ function UploadPart({ userId }) {
       conductor_score: 'Partitura direttore',
       instrument_part: 'Parte strumento',
       lead_sheet: 'Lead sheet',
+      chord_lyrics: 'Testo con accordi',
+      method: 'Metodo',
+      exercise: 'Esercizi',
       other: 'Altro',
     }
 
@@ -494,6 +497,9 @@ function UploadPart({ userId }) {
             <option value="conductor_score">Partitura direttore</option>
             <option value="instrument_part">Parte strumento</option>
             <option value="lead_sheet">Lead sheet</option>
+            <option value="chord_lyrics">Testo con accordi</option>
+            <option value="method">Metodo</option>
+            <option value="exercise">Esercizi</option>
             <option value="other">Altro</option>
           </select>
         </div>

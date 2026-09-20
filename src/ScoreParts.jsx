@@ -4,11 +4,29 @@ import { Link } from 'react-router-dom'
 
 function ScoreParts({ scoreId, userId, isAdmin }) {
   const [parts, setParts] = useState([])
+  const [myBandIds, setMyBandIds] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchParts()
   }, [scoreId])
+
+  useEffect(() => {
+    fetchMyBandIds()
+  }, [userId])
+
+  async function fetchMyBandIds() {
+    if (!userId) {
+      setMyBandIds([])
+      return
+    }
+    const { data } = await supabase
+      .from('user_band_permissions')
+      .select('band_id')
+      .eq('user_id', userId)
+
+    setMyBandIds((data || []).map((p) => p.band_id))
+  }
 
   async function fetchParts() {
     setLoading(true)
@@ -17,7 +35,7 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
       .select(`
         id, part_type, original_filename, file_path, preview_path, uploaded_by,
         instrument:instrument_id ( name ),
-        score_parts_bands ( bands ( owner_id ) )
+        score_parts_bands ( band_id, bands ( owner_id ) )
       `)
       .eq('score_id', scoreId)
 
@@ -30,12 +48,18 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
     setLoading(false)
   }
 
-    function getPreviewUrl(previewPath) {
+  function getPreviewUrl(previewPath) {
     if (!previewPath) return null
     const { data } = supabase.storage
       .from('score-previews')
       .getPublicUrl(previewPath)
     return data.publicUrl
+  }
+
+  function canDownload(part) {
+    if (isAdmin) return true
+    if (!userId) return false
+    return (part.score_parts_bands || []).some((spb) => myBandIds.includes(spb.band_id))
   }
 
   async function handleDownload(filePath, originalFilename) {
@@ -56,7 +80,7 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
     URL.revokeObjectURL(url)
   }
 
-    async function handleDelete(part) {
+  async function handleDelete(part) {
     const confirmed = window.confirm(
       `Sei sicuro di voler eliminare "${part.original_filename}"? Questa azione non si può annullare.`
     )
@@ -110,18 +134,20 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
               />
             </div>
           )}
-                    [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
-          {userId ? (
+          [{p.part_type}{p.instrument && ` — ${p.instrument.name}`}] {p.original_filename}{' '}
+          {canDownload(p) ? (
             <button onClick={() => handleDownload(p.file_path, p.original_filename)}>
               Scarica
             </button>
+          ) : userId ? (
+            <button disabled title="Non hai i permessi per scaricare questo file">Scarica</button>
           ) : (
             <span>
               <button disabled title="Effettua l'accesso per scaricare">Scarica</button>{' '}
               <Link to="/">Registrati o accedi per scaricare</Link>
             </span>
           )}{' '}
-              {(isAdmin || p.uploaded_by === userId || p.score_parts_bands?.some((spb) => spb.bands?.owner_id === userId)) && (
+          {(isAdmin || p.uploaded_by === userId || p.score_parts_bands?.some((spb) => spb.bands?.owner_id === userId)) && (
             <button onClick={() => handleDelete(p)}>🗑️ Elimina</button>
           )}
         </li>
