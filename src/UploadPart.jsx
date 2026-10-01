@@ -90,6 +90,7 @@ function UploadPart({ userId }) {
   const [selectedBand, setSelectedBand] = useState('')
   const [partType, setPartType] = useState('full_package')
   const [instrumentId, setInstrumentId] = useState('')
+  const [sectionId, setSectionId] = useState('')
   const [file, setFile] = useState(null)
   const [message, setMessage] = useState('')
   const [uploading, setUploading] = useState(false)
@@ -136,7 +137,9 @@ function UploadPart({ userId }) {
     const { data: contributorsData } = await supabase.from('contributors').select('id, first_name, last_name')
     const { data: performersData } = await supabase.from('performers').select('id, name')
     const { data: variantsData } = await supabase.from('variants').select('id, name')
-    const { data: instrumentsData } = await supabase.from('instruments').select('id, name')
+    const { data: instrumentsData } = await supabase
+      .from('instruments')
+      .select('id, name, chair_number, section:section_id ( id, name, family:family_id ( name ) )')
     setScores(scoresData || [])
     setBands(bandsData || [])
     setContributors(contributorsData || [])
@@ -505,15 +508,43 @@ function UploadPart({ userId }) {
         </div>
 
         {partType === 'instrument_part' && (
-          <div>
-            <label>Strumento: </label>
-            <select value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)}>
-              <option value="">-- scegli --</option>
-              {instruments.map((i) => (
-                <option key={i.id} value={i.id}>{i.name}</option>
-              ))}
-            </select>
-          </div>
+          <>
+            <div>
+              <label>Sezione: </label>
+              <select
+                value={sectionId}
+                onChange={(e) => {
+                  setSectionId(e.target.value)
+                  setInstrumentId('')
+                }}
+              >
+                <option value="">-- scegli --</option>
+                {[...new Map(instruments.map((i) => [i.section?.id, i.section])).values()]
+                  .filter(Boolean)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.family?.name ? `${s.family.name} — ${s.name}` : s.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {sectionId && (
+              <div>
+                <label>Posizione: </label>
+                <select value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)}>
+                  <option value="">-- scegli --</option>
+                  {instruments
+                    .filter((i) => i.section?.id === Number(sectionId))
+                    .sort((a, b) => (a.chair_number || 0) - (b.chair_number || 0))
+                    .map((i) => (
+                      <option key={i.id} value={i.id}>{i.name}</option>
+                    ))}
+                </select>
+              </div>
+            )}
+          </>
         )}
 
         <div>
