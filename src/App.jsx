@@ -109,7 +109,7 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/catalog" element={<CatalogPage userId={session?.user?.id} />} />
           <Route
             path="/scores"
             element={<ScoresPage profile={profile} userId={session?.user?.id} />}

@@ -144,7 +144,7 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
           ) : (
             <span>
               <button disabled title="Effettua l'accesso per scaricare">Scarica</button>{' '}
-              <Link to="/">Registrati o accedi per scaricare</Link>
+              <Link to="/">Accedi e richiedi l'affiliazione alla band per scaricare</Link>
             </span>
           )}{' '}
           {(isAdmin || p.uploaded_by === userId || p.score_parts_bands?.some((spb) => spb.bands?.owner_id === userId)) && (

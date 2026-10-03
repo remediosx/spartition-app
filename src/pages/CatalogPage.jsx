@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
-function CatalogPage() {
+function CatalogPage({ userId }) {
   const [scores, setScores] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -19,7 +19,7 @@ function CatalogPage() {
         transcriber:transcriber_id ( first_name, last_name ),
         recorded_by:recorded_by_id ( name ),
         variant:variant_id ( name ),
-        score_parts ( score_parts_bands ( bands ( name ) ) )
+        score_parts ( score_parts_bands ( bands ( id, name ) ) )
       `)
 
     if (error) {
@@ -28,6 +28,23 @@ function CatalogPage() {
       setScores(data)
     }
     setLoading(false)
+  }
+
+    async function requestAffiliation(bandId) {
+    if (!userId) {
+      alert('Devi accedere per richiedere l\'affiliazione.')
+      return
+    }
+    const { error } = await supabase.from('band_join_requests').insert({
+      user_id: userId,
+      band_id: bandId,
+      status: 'pending',
+    })
+    if (error) {
+      alert('Errore: ' + error.message)
+    } else {
+      alert('Richiesta inviata! Il titolare della band la valuterà.')
+    }
   }
 
   useEffect(() => {
@@ -55,15 +72,15 @@ function CatalogPage() {
             if (score.recorded_by) details.push(`Come registrata da: ${score.recorded_by.name}`)
             if (score.variant) details.push(`[${score.variant.name}]`)
 
-            const bandNames = [
-              ...new Set(
+            const relatedBands = [
+              ...new Map(
                 (score.score_parts || [])
                   .flatMap((sp) => sp.score_parts_bands || [])
-                  .map((spb) => spb.bands?.name)
+                  .map((spb) => spb.bands)
                   .filter(Boolean)
-              ),
+                  .map((b) => [b.id, b])
+              ).values(),
             ]
-            if (bandNames.length > 0) details.push(`Band: ${bandNames.join(', ')}`)
 
             return (
               <li key={score.id}>
@@ -73,6 +90,16 @@ function CatalogPage() {
                 {details.length > 0 && (
                   <div style={{ fontSize: '0.9em', color: '#555' }}>
                     {details.join(' — ')}
+                  </div>
+                )}
+                {relatedBands.length > 0 && (
+                  <div style={{ fontSize: '0.85em' }}>
+                    {relatedBands.map((b) => (
+                      <span key={b.id} style={{ marginRight: '10px' }}>
+                        {b.name}{' '}
+                        <button onClick={() => requestAffiliation(b.id)}>Richiedi affiliazione</button>
+                      </span>
+                    ))}
                   </div>
                 )}
               </li>
