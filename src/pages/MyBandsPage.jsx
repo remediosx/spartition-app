@@ -5,6 +5,7 @@ function MyBandsPage({ userId }) {
   const [myBands, setMyBands] = useState([])
   const [users, setUsers] = useState([])
   const [permissions, setPermissions] = useState([])
+  const [requests, setRequests] = useState([])
   const [selectedBand, setSelectedBand] = useState('')
   const [selectedUser, setSelectedUser] = useState('')
   const [newBandName, setNewBandName] = useState('')
@@ -36,9 +37,21 @@ function MyBandsPage({ userId }) {
         profiles ( first_name, last_name, email )
       `)
 
+    const { data: requestsData } = await supabase
+      .from('band_join_requests')
+      .select(`
+        id,
+        status,
+        band_id,
+        user_id,
+        profiles ( first_name, last_name, email )
+      `)
+      .eq('status', 'pending')
+
     setMyBands(bandsData || [])
     setUsers(usersData || [])
     setPermissions(permsData || [])
+    setRequests(requestsData || [])
     setLoading(false)
   }
 
@@ -116,6 +129,44 @@ function MyBandsPage({ userId }) {
     }
   }
 
+  async function handleApproveRequest(request) {
+    const { error: permError } = await supabase.from('user_band_permissions').insert({
+      user_id: request.user_id,
+      band_id: request.band_id,
+      can_upload: false,
+    })
+
+    if (permError) {
+      alert('Errore nell\'assegnare il permesso: ' + permError.message)
+      return
+    }
+
+    const { error: statusError } = await supabase
+      .from('band_join_requests')
+      .update({ status: 'approved' })
+      .eq('id', request.id)
+
+    if (statusError) {
+      alert('Errore nell\'aggiornare la richiesta: ' + statusError.message)
+      return
+    }
+
+    fetchAll()
+  }
+
+  async function handleRejectRequest(requestId) {
+    const { error } = await supabase
+      .from('band_join_requests')
+      .update({ status: 'rejected' })
+      .eq('id', requestId)
+
+    if (error) {
+      alert('Errore: ' + error.message)
+    } else {
+      fetchAll()
+    }
+  }
+
   if (loading) return <p>Caricamento...</p>
 
   return (
@@ -143,6 +194,25 @@ function MyBandsPage({ userId }) {
 
       {myBands.length > 0 && (
         <>
+          <h3>Richieste di affiliazione in attesa</h3>
+          {requests.filter((r) => myBands.some((b) => b.id === r.band_id)).length === 0 && (
+            <p>Nessuna richiesta in attesa.</p>
+          )}
+          <ul>
+            {requests
+              .filter((r) => myBands.some((b) => b.id === r.band_id))
+              .map((r) => (
+                <li key={r.id}>
+                  {r.profiles ? `${r.profiles.first_name} ${r.profiles.last_name} (${r.profiles.email})` : 'Utente sconosciuto'}
+                  {' — '}
+                  {myBands.find((b) => b.id === r.band_id)?.name}
+                  {' '}
+                  <button onClick={() => handleApproveRequest(r)}>✅ Approva</button>{' '}
+                  <button onClick={() => handleRejectRequest(r.id)}>❌ Rifiuta</button>
+                </li>
+              ))}
+          </ul>
+
           <h3>Assegna permesso di upload</h3>
           <form onSubmit={handleGrant}>
             <select value={selectedBand} onChange={(e) => setSelectedBand(e.target.value)}>
