@@ -240,7 +240,7 @@ function MyBandsPage({ userId }) {
               .filter((p) => myBands.some((b) => b.id === p.band_id))
               .map((p) => (
                 <li key={p.id}>
-                  {p.profiles.first_name} {p.profiles.last_name} ({p.profiles.email})
+                  {p.profiles ? `${p.profiles.first_name} ${p.profiles.last_name} (${p.profiles.email})` : 'Utente sconosciuto'}
                   {' — '}
                   {myBands.find((b) => b.id === p.band_id)?.name}
                   {p.user_id === userId && ' (tu)'}

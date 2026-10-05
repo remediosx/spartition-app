@@ -5,6 +5,8 @@ import { supabase } from '../supabaseClient'
 function CatalogPage({ userId }) {
   const [scores, setScores] = useState([])
   const [loading, setLoading] = useState(true)
+  const [myBandIds, setMyBandIds] = useState([])
+  const [myPendingRequests, setMyPendingRequests] = useState([])
 
   async function fetchScores() {
     setLoading(true)
@@ -19,7 +21,7 @@ function CatalogPage({ userId }) {
         transcriber:transcriber_id ( first_name, last_name ),
         recorded_by:recorded_by_id ( name ),
         variant:variant_id ( name ),
-        score_parts ( score_parts_bands ( bands ( id, name ) ) )
+        score_parts ( score_parts_bands ( bands ( id, name, owner_id ) ) )
       `)
 
     if (error) {
@@ -44,12 +46,34 @@ function CatalogPage({ userId }) {
       alert('Errore: ' + error.message)
     } else {
       alert('Richiesta inviata! Il titolare della band la valuterà.')
+      fetchMyStatus()
     }
   }
 
   useEffect(() => {
     fetchScores()
-  }, [])
+    fetchMyStatus()
+  }, [userId])
+
+  async function fetchMyStatus() {
+    if (!userId) {
+      setMyBandIds([])
+      setMyPendingRequests([])
+      return
+    }
+    const { data: perms } = await supabase
+      .from('user_band_permissions')
+      .select('band_id')
+      .eq('user_id', userId)
+    setMyBandIds((perms || []).map((p) => p.band_id))
+
+    const { data: reqs } = await supabase
+      .from('band_join_requests')
+      .select('band_id')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+    setMyPendingRequests((reqs || []).map((r) => r.band_id))
+  }
 
   return (
     <div>
@@ -94,12 +118,24 @@ function CatalogPage({ userId }) {
                 )}
                 {relatedBands.length > 0 && (
                   <div style={{ fontSize: '0.85em' }}>
-                    {relatedBands.map((b) => (
-                      <span key={b.id} style={{ marginRight: '10px' }}>
-                        {b.name}{' '}
-                        <button onClick={() => requestAffiliation(b.id)}>Richiedi affiliazione</button>
-                      </span>
-                    ))}
+                    {relatedBands.map((b) => {
+                      const isOwner = b.owner_id === userId
+                      const isMember = myBandIds.includes(b.id)
+                      const isPending = myPendingRequests.includes(b.id)
+                      return (
+                        <span key={b.id} style={{ marginRight: '10px' }}>
+                          {b.name}
+                          {!isOwner && !isMember && !isPending && (
+                            <>
+                              {' '}
+                              <button onClick={() => requestAffiliation(b.id)}>Richiedi affiliazione</button>
+                            </>
+                          )}
+                          {isPending && <em> (richiesta in attesa)</em>}
+                          {isMember && <em> (già affiliato)</em>}
+                        </span>
+                      )
+                    })}
                   </div>
                 )}
               </li>
