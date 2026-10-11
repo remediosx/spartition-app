@@ -245,7 +245,9 @@ function MyBandsPage({ userId }) {
                   {myBands.find((b) => b.id === p.band_id)?.name}
                   {p.user_id === userId && ' (tu)'}
                   {' '}
-                  <button onClick={() => handleRevoke(p.id, p.user_id === userId)}>Revoca</button>
+                  {p.user_id !== userId && (
+                    <button onClick={() => handleRevoke(p.id, false)}>Revoca</button>
+                  )}
                 </li>
               ))}
           </ul>
