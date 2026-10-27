@@ -80,12 +80,27 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
     URL.revokeObjectURL(url)
   }
 
-  async function handleDelete(part) {
+    async function handleDelete(part) {
     const confirmed = window.confirm(
       `Sei sicuro di voler eliminare "${part.original_filename}"? Questa azione non si può annullare.`
     )
     if (!confirmed) return
 
+    // 1) File e anteprima: prima di tutto, finché la parte è ancora collegata alla band
+    const { error: storageError } = await supabase.storage
+      .from('score-parts')
+      .remove([part.file_path])
+
+    if (storageError) {
+      alert('Errore nella rimozione del file: ' + storageError.message)
+      return
+    }
+
+    if (part.preview_path) {
+      await supabase.storage.from('score-previews').remove([part.preview_path])
+    }
+
+    // 2) Collegamenti alle band
     const { error: linkError } = await supabase
       .from('score_parts_bands')
       .delete()
@@ -96,15 +111,7 @@ function ScoreParts({ scoreId, userId, isAdmin }) {
       return
     }
 
-    const { error: storageError } = await supabase.storage
-      .from('score-parts')
-      .remove([part.file_path])
-
-    if (storageError) {
-      alert('Errore nella rimozione del file: ' + storageError.message)
-      return
-    }
-
+    // 3) Riga nel database
     const { error: dbError } = await supabase
       .from('score_parts')
       .delete()

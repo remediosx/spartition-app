@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import UploadPart from '../UploadPart'
 
-function ScoresPage({ profile, userId }) {
+function ScoresPage({ canUpload, userId }) {
   const [myBands, setMyBands] = useState([])
   const [scores, setScores] = useState([])
   const [loadingBands, setLoadingBands] = useState(true)
@@ -97,7 +97,7 @@ function ScoresPage({ profile, userId }) {
     setSearchParams({})
   }
 
-  const canUpload = profile && (profile.role === 'uploader' || profile.role === 'admin')
+
   const currentBand = myBands.find((b) => b.id === Number(selectedBandId))
 
   if (loadingBands) return <p>Caricamento...</p>

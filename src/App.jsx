@@ -17,6 +17,7 @@ import DropdownMenu from './DropdownMenu'
 function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
+  const [canUploadAnywhere, setCanUploadAnywhere] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
@@ -53,6 +54,26 @@ function App() {
 
     fetchProfile()
   }, [session])
+
+  useEffect(() => {
+    async function fetchCanUpload() {
+      if (!session) {
+        setCanUploadAnywhere(false)
+        return
+      }
+      const { data, error } = await supabase.rpc('can_upload_anywhere')
+      if (error) {
+        console.error('Errore nel controllo permessi di upload:', error)
+        setCanUploadAnywhere(false)
+      } else {
+        setCanUploadAnywhere(data === true)
+      }
+    }
+
+    fetchCanUpload()
+  }, [session])
+
+  const canUpload = canUploadAnywhere || profile?.role === 'admin'
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -112,14 +133,20 @@ function App() {
           <Route path="/catalog" element={<CatalogPage userId={session?.user?.id} />} />
           <Route
             path="/scores"
-            element={<ScoresPage profile={profile} userId={session?.user?.id} />}
+            element={<ScoresPage canUpload={canUpload} userId={session?.user?.id} />}
           />
-          <Route path="/scores/:id" element={<ScoreDetailPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />} />
+          <Route
+            path="/scores/:id"
+            element={<ScoreDetailPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />}
+          />
           <Route
             path="/media"
-            element={<MediaPage profile={profile} userId={session?.user?.id} />}
+            element={<MediaPage canUpload={canUpload} userId={session?.user?.id} />}
           />
-          <Route path="/media-catalog" element={<MediaCatalogPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />} />
+          <Route
+            path="/media-catalog"
+            element={<MediaCatalogPage userId={session?.user?.id} isAdmin={profile?.role === 'admin'} />}
+          />
           <Route path="/my-bands" element={<MyBandsPage userId={session?.user?.id} />} />
           <Route
             path="/admin"

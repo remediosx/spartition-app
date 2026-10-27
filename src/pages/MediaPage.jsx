@@ -2,9 +2,7 @@ import { Link } from 'react-router-dom'
 import UploadMedia from '../UploadMedia'
 import MyMediaList from '../MyMediaList'
 
-function MediaPage({ profile, userId }) {
-  const canUpload = profile && (profile.role === 'uploader' || profile.role === 'admin')
-
+function MediaPage({ canUpload, userId }) {
   return (
     <div>
       <h2>I miei Media</h2>
