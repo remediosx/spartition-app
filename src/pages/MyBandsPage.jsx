@@ -94,28 +94,41 @@ function MyBandsPage({ userId }) {
       return
     }
 
-    const { error } = await supabase.from('user_band_permissions').insert({
-      user_id: selectedUser,
-      band_id: selectedBand,
-      can_upload: true,
-    })
+    // Se la persona è già nella band aggiorna la riga, altrimenti la crea
+    const { error } = await supabase
+      .from('user_band_permissions')
+      .upsert(
+        { user_id: selectedUser, band_id: Number(selectedBand), can_upload: true },
+        { onConflict: 'user_id,band_id' }
+      )
 
     if (error) {
       setMessage('Errore: ' + error.message)
     } else {
-      setMessage('Permesso assegnato!')
+      setMessage('Permesso di upload assegnato!')
       setSelectedUser('')
       fetchAll()
     }
   }
 
-  async function handleRevoke(permissionId, isMe) {
-    if (isMe) {
-      const confirmed = window.confirm(
-        'Stai per revocare il TUO permesso di upload su questa band, di cui sei titolare. Potrai sempre riassegnartelo in seguito. Vuoi procedere?'
-      )
-      if (!confirmed) return
+  async function handleSetUpload(permissionId, value) {
+    const { error } = await supabase
+      .from('user_band_permissions')
+      .update({ can_upload: value })
+      .eq('id', permissionId)
+
+    if (error) {
+      alert('Errore: ' + error.message)
+    } else {
+      fetchAll()
     }
+  }
+
+  async function handleRevoke(permissionId) {
+    const confirmed = window.confirm(
+      'Rimuovere questa persona dalla band? Non potrà più scaricarne le parti.'
+    )
+    if (!confirmed) return
 
     const { error } = await supabase
       .from('user_band_permissions')
@@ -130,11 +143,13 @@ function MyBandsPage({ userId }) {
   }
 
   async function handleApproveRequest(request) {
-    const { error: permError } = await supabase.from('user_band_permissions').insert({
-      user_id: request.user_id,
-      band_id: request.band_id,
-      can_upload: false,
-    })
+    // Se la persona è già nella band non cambia nulla, altrimenti entra come downloader
+    const { error: permError } = await supabase
+      .from('user_band_permissions')
+      .upsert(
+        { user_id: request.user_id, band_id: request.band_id, can_upload: false },
+        { onConflict: 'user_id,band_id', ignoreDuplicates: true }
+      )
 
     if (permError) {
       alert('Errore nell\'assegnare il permesso: ' + permError.message)
@@ -169,6 +184,8 @@ function MyBandsPage({ userId }) {
 
   if (loading) return <p>Caricamento...</p>
 
+  const myRequests = requests.filter((r) => myBands.some((b) => b.id === r.band_id))
+
   return (
     <div>
       <h2>Le mie Band</h2>
@@ -195,25 +212,23 @@ function MyBandsPage({ userId }) {
       {myBands.length > 0 && (
         <>
           <h3>Richieste di affiliazione in attesa</h3>
-          {requests.filter((r) => myBands.some((b) => b.id === r.band_id)).length === 0 && (
-            <p>Nessuna richiesta in attesa.</p>
-          )}
+          {myRequests.length === 0 && <p>Nessuna richiesta in attesa.</p>}
           <ul>
-            {requests
-              .filter((r) => myBands.some((b) => b.id === r.band_id))
-              .map((r) => (
-                <li key={r.id}>
-                  {r.profiles ? `${r.profiles.first_name} ${r.profiles.last_name} (${r.profiles.email})` : 'Utente sconosciuto'}
-                  {' — '}
-                  {myBands.find((b) => b.id === r.band_id)?.name}
-                  {' '}
-                  <button onClick={() => handleApproveRequest(r)}>✅ Approva</button>{' '}
-                  <button onClick={() => handleRejectRequest(r.id)}>❌ Rifiuta</button>
-                </li>
-              ))}
+            {myRequests.map((r) => (
+              <li key={r.id}>
+                {r.profiles
+                  ? `${r.profiles.first_name} ${r.profiles.last_name} (${r.profiles.email})`
+                  : 'Utente sconosciuto'}
+                {' — '}
+                {myBands.find((b) => b.id === r.band_id)?.name}
+                {' '}
+                <button onClick={() => handleApproveRequest(r)}>✅ Approva</button>{' '}
+                <button onClick={() => handleRejectRequest(r.id)}>❌ Rifiuta</button>
+              </li>
+            ))}
           </ul>
 
-          <h3>Assegna permesso di upload</h3>
+          <h3>Aggiungi una persona con permesso di upload</h3>
           <form onSubmit={handleGrant}>
             <select value={selectedBand} onChange={(e) => setSelectedBand(e.target.value)}>
               <option value="">-- scegli una tua band --</option>
@@ -224,29 +239,42 @@ function MyBandsPage({ userId }) {
 
             <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)}>
               <option value="">-- scegli utente --</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.first_name} {u.last_name} ({u.email})
-                </option>
-              ))}
+              {users
+                .filter((u) => u.id !== userId)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.first_name} {u.last_name} ({u.email})
+                  </option>
+                ))}
             </select>
 
             <button type="submit">Assegna</button>
           </form>
 
-          <h3>Permessi attuali sulle tue band</h3>
+          <h3>Persone nelle tue band</h3>
           <ul>
             {permissions
               .filter((p) => myBands.some((b) => b.id === p.band_id))
               .map((p) => (
                 <li key={p.id}>
-                  {p.profiles ? `${p.profiles.first_name} ${p.profiles.last_name} (${p.profiles.email})` : 'Utente sconosciuto'}
+                  {p.profiles
+                    ? `${p.profiles.first_name} ${p.profiles.last_name} (${p.profiles.email})`
+                    : 'Utente sconosciuto'}
                   {' — '}
                   {myBands.find((b) => b.id === p.band_id)?.name}
-                  {p.user_id === userId && ' (tu)'}
-                  {' '}
+                  {p.user_id === userId
+                    ? ' (tu, titolare)'
+                    : p.can_upload
+                      ? ' — può caricare'
+                      : ' — solo download'}
                   {p.user_id !== userId && (
-                    <button onClick={() => handleRevoke(p.id, false)}>Revoca</button>
+                    <>
+                      {' '}
+                      <button onClick={() => handleSetUpload(p.id, !p.can_upload)}>
+                        {p.can_upload ? 'Togli upload' : 'Permetti upload'}
+                      </button>{' '}
+                      <button onClick={() => handleRevoke(p.id)}>Rimuovi dalla band</button>
+                    </>
                   )}
                 </li>
               ))}
