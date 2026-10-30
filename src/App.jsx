@@ -17,7 +17,7 @@ import DropdownMenu from './DropdownMenu'
 function App() {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [canUploadAnywhere, setCanUploadAnywhere] = useState(false)
+  const [status, setStatus] = useState('guest')
   const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
@@ -56,24 +56,24 @@ function App() {
   }, [session])
 
   useEffect(() => {
-    async function fetchCanUpload() {
+    async function fetchStatus() {
       if (!session) {
-        setCanUploadAnywhere(false)
+        setStatus('guest')
         return
       }
-      const { data, error } = await supabase.rpc('can_upload_anywhere')
+      const { data, error } = await supabase.rpc('my_status')
       if (error) {
-        console.error('Errore nel controllo permessi di upload:', error)
-        setCanUploadAnywhere(false)
+        console.error('Errore nel calcolo dello stato utente:', error)
+        setStatus('viewer')
       } else {
-        setCanUploadAnywhere(data === true)
+        setStatus(data)
       }
     }
 
-    fetchCanUpload()
+    fetchStatus()
   }, [session])
 
-  const canUpload = canUploadAnywhere || profile?.role === 'admin'
+  const canUpload = status === 'uploader' || status === 'admin'
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -88,9 +88,7 @@ function App() {
           <div>
             {session ? (
               <span>
-                {session.user.email}
-                {profile && ` (${profile.role})`}
-                {' '}
+                {session.user.email} ({status}){' '}
                 <button onClick={handleLogout}>Esci</button>
               </span>
             ) : (
