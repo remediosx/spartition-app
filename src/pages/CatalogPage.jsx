@@ -21,7 +21,7 @@ function CatalogPage({ userId }) {
         transcriber:transcriber_id ( first_name, last_name ),
         recorded_by:recorded_by_id ( name ),
         variant:variant_id ( name ),
-        score_parts ( score_parts_bands ( bands ( id, name, owner_id ) ) )
+        score_parts!inner ( score_parts_bands ( bands ( id, name, owner_id ) ) )
       `)
 
     if (error) {
