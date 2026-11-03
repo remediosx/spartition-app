@@ -4,8 +4,12 @@ import { supabase } from './supabaseClient'
 function AdminUsers() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [myId, setMyId] = useState(null)
 
   useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setMyId(session?.user?.id || null)
+    })
     fetchUsers()
   }, [])
 
@@ -42,13 +46,17 @@ function AdminUsers() {
   return (
     <div>
       <h3>Gestione Utenti</h3>
+      <p style={{ fontSize: '0.9em' }}>
+        Qui si decide solo chi è admin. Il ruolo di ciascuno nelle band (downloader, uploader) dipende
+        dalle affiliazioni e si gestisce da "Le mie Band".
+      </p>
       <table border="1" cellPadding="6" style={{ borderCollapse: 'collapse', marginTop: '10px' }}>
         <thead>
           <tr>
             <th>Nome</th>
             <th>Cognome</th>
             <th>Email</th>
-            <th>Ruolo</th>
+            <th>Admin</th>
           </tr>
         </thead>
         <tbody>
@@ -59,12 +67,12 @@ function AdminUsers() {
               <td>{u.email}</td>
               <td>
                 <select
-                  value={u.role}
+                  value={u.role === 'admin' ? 'admin' : 'viewer'}
                   onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                  disabled={u.id === myId}
+                  title={u.id === myId ? 'Non puoi modificare il tuo stesso ruolo' : ''}
                 >
-                  <option value="viewer">viewer</option>
-                  <option value="downloader">downloader</option>
-                  <option value="uploader">uploader</option>
+                  <option value="viewer">utente</option>
                   <option value="admin">admin</option>
                 </select>
               </td>
